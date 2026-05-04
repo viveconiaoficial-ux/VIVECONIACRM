@@ -21,6 +21,10 @@ interface AppStore {
   upsertLead: (lead: Lead) => void
   removeLead: (id: string) => void
 
+  /** Error al leer desde Supabase (silenciar en consola imposibilita diagnóstico en prod). */
+  leadsFetchError: string | null
+  setLeadsFetchError: (msg: string | null) => void
+
   filters: Filters
   setFilter: <K extends keyof Filters>(key: K, value: Filters[K]) => void
   resetFilters: () => void
@@ -42,6 +46,9 @@ const defaultFilters: Filters = {
 export const useAppStore = create<AppStore>((set) => ({
   leads: [],
   setLeads: (leads) => set({ leads }),
+
+  leadsFetchError: null,
+  setLeadsFetchError: (msg) => set({ leadsFetchError: msg }),
   upsertLead: (lead) =>
     set((state) => ({
       leads: state.leads.some((l) => l.id === lead.id)
