@@ -4,6 +4,7 @@
  */
 import { createClient } from '@supabase/supabase-js'
 import { LEAD_STATUSES } from '@/constants'
+import { normalizeSupabaseUrl } from '@/lib/supabaseUrl'
 import type {
   LeadCompetitor,
   LeadInteraction,
@@ -12,14 +13,16 @@ import type {
 } from '@/types/analytics'
 import type { Lead, LeadInsert, LeadStatus, LeadUpdate } from '@/types/lead'
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string
+const supabaseUrlRaw = (import.meta.env.VITE_SUPABASE_URL as string | undefined)?.trim()
+const supabaseAnonKey = (import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined)?.trim()
 
-if (!supabaseUrl || !supabaseAnonKey) {
+if (!supabaseUrlRaw || !supabaseAnonKey) {
   throw new Error(
     'Faltan variables de entorno VITE_SUPABASE_URL y VITE_SUPABASE_ANON_KEY',
   )
 }
+
+const supabaseUrl = normalizeSupabaseUrl(supabaseUrlRaw)
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 

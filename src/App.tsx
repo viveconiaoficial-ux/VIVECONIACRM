@@ -9,6 +9,7 @@ import { FichasPipeline } from '@/pages/FichasPipeline'
 import { LeadDetail } from '@/pages/LeadDetail'
 import { PlanInteracciones } from '@/pages/PlanInteracciones'
 import { useLeadsSubscriptions } from '@/hooks/useLeads'
+import { normalizeSupabaseUrl } from '@/lib/supabaseUrl'
 import { useAppStore } from '@/store/useAppStore'
 
 function LeadsConnectionBanner() {
@@ -18,7 +19,7 @@ function LeadsConnectionBanner() {
   let supabaseHost = ''
   try {
     supabaseHost = new URL(
-      import.meta.env.VITE_SUPABASE_URL ?? '',
+      normalizeSupabaseUrl(import.meta.env.VITE_SUPABASE_URL ?? ''),
     ).hostname
   } catch {
     supabaseHost = '(URL no válida en build)'
