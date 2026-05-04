@@ -33,7 +33,8 @@ interface AppStore {
 }
 
 const defaultFilters: Filters = {
-  hasWebsite: false,
+  /** null = “Todos”; antes false ocultaba leads con web en el dashboard. */
+  hasWebsite: null,
   status: null,
   search: '',
 }
