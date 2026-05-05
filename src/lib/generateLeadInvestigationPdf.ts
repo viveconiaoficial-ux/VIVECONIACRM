@@ -8,24 +8,19 @@ export interface LeadInvestigationPdfContext {
   proposals: LeadProposal[]
 }
 
-/** Fondo papel, tintas y acento (RGB 0-255): informe sobrio tipo editorial */
+/** Paleta sobria tipo informe consultoría (RGB 0-255) */
 const C = {
-  paper: [252, 250, 248] as [number, number, number],
-  coverBandTop: [22, 18, 15] as [number, number, number],
-  coverBandMid: [45, 36, 28] as [number, number, number],
-  coverInk: [254, 252, 248] as [number, number, number],
-  ink: [34, 32, 28] as [number, number, number],
-  muted: [110, 102, 94] as [number, number, number],
-  hairline: [228, 218, 208] as [number, number, number],
-  accentBar: [186, 124, 48] as [number, number, number],
-  valueBand: [248, 244, 238] as [number, number, number],
+  paper: [255, 255, 253] as [number, number, number],
+  ink: [28, 27, 25] as [number, number, number],
+  muted: [95, 90, 85] as [number, number, number],
+  hairline: [222, 215, 208] as [number, number, number],
+  accentLine: [160, 110, 45] as [number, number, number],
 }
 
 const MARGIN_MM = 20
 const FOOTER_MM = 12
 const BODY_LINE_PT = 4.85
 const VALUE_SIZE = 10
-const LABEL_SIZE = 7.25
 
 /** Helvetica en jsPDF (WinAnsi) no dibuja bien tipografía “rica”, símbolos ni emoji. */
 function sanitizePdfText(input: string): string {
@@ -110,7 +105,7 @@ function fileSlugFromLead(lead: Lead): string {
 type Block = { label: string; value: string }
 
 function addBlocksForLead(lead: Lead, ctx: LeadInvestigationPdfContext): {
-  coverMeta: string[]
+  exportLabel: string
   sections: { title: string; blocks: Block[] }[]
 } {
   const sections: { title: string; blocks: Block[] }[] = []
@@ -312,20 +307,19 @@ function addBlocksForLead(lead: Lead, ctx: LeadInvestigationPdfContext): {
 
   const gen = sanitizePdfText(
     new Intl.DateTimeFormat('es-ES', {
-      dateStyle: 'medium',
+      dateStyle: 'long',
       timeStyle: 'short',
     }).format(new Date()),
   )
-  const coverMeta = [gen, `ID: ${sanitizePdfText(lead.id)}`]
 
-  return { coverMeta, sections }
+  return { exportLabel: gen, sections }
 }
 
 export function downloadLeadInvestigationPdf(
   lead: Lead,
   ctx: LeadInvestigationPdfContext,
 ): void {
-  const { coverMeta, sections } = addBlocksForLead(lead, ctx)
+  const { exportLabel, sections } = addBlocksForLead(lead, ctx)
 
   const doc = new jsPDF({ unit: 'mm', format: 'a4' })
   const pageW = doc.internal.pageSize.getWidth()
@@ -333,120 +327,124 @@ export function downloadLeadInvestigationPdf(
   const innerW = pageW - MARGIN_MM * 2
   let y = MARGIN_MM
 
+  const bizShort = (): string => {
+    const n = sanitizePdfText(lead.business_name)
+    return n.length > 54 ? `${n.slice(0, 51)}...` : n
+  }
+
   function fillPaper(): void {
     doc.setFillColor(...C.paper)
     doc.rect(0, 0, pageW, pageH, 'F')
+  }
+
+  const drawContinuationHead = (): void => {
+    doc.setDrawColor(...C.hairline)
+    doc.setLineWidth(0.12)
+    doc.line(MARGIN_MM, MARGIN_MM, pageW - MARGIN_MM, MARGIN_MM)
+    doc.setFont('helvetica', 'normal')
+    doc.setFontSize(7.5)
+    doc.setTextColor(...C.muted)
+    doc.text(bizShort(), MARGIN_MM, MARGIN_MM + 5)
+    y = MARGIN_MM + 11
+  }
+
+  /** Portada clara: sin bloque oscuro ni UUID ni letra pequeña de “meta documento”. */
+  const drawFirstPageHeader = (): void => {
+    doc.setDrawColor(...C.accentLine)
+    doc.setLineWidth(0.5)
+    doc.line(MARGIN_MM, 21, pageW - MARGIN_MM, 21)
+
+    doc.setFont('helvetica', 'normal')
+    doc.setFontSize(7)
+    doc.setTextColor(...C.muted)
+    doc.text(sanitizePdfText('Informe de prospecto'), MARGIN_MM, 29)
+    doc.setFontSize(7)
+    doc.text(
+      sanitizePdfText('Vive CRM'),
+      pageW - MARGIN_MM,
+      29,
+      { align: 'right' },
+    )
+
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(17)
+    doc.setTextColor(...C.ink)
+    let hy = 38
+    const title = sanitizePdfText(lead.business_name)
+    const nameLines = doc.splitTextToSize(title, innerW) as string[]
+    for (const line of nameLines) {
+      doc.text(line, MARGIN_MM, hy)
+      hy += 8
+    }
+
+    hy += 3
+    doc.setFont('helvetica', 'normal')
+    doc.setFontSize(8)
+    doc.setTextColor(...C.muted)
+    doc.text(sanitizePdfText(`Exportación · ${exportLabel}`), MARGIN_MM, hy)
+
+    hy += 8
+    doc.setDrawColor(...C.hairline)
+    doc.setLineWidth(0.2)
+    doc.line(MARGIN_MM, hy, pageW - MARGIN_MM, hy)
+    y = hy + 9
   }
 
   const ensureSpace = (hMm: number) => {
     if (y + hMm > pageH - FOOTER_MM) {
       doc.addPage()
       fillPaper()
-      y = MARGIN_MM
+      drawContinuationHead()
     }
   }
 
   fillPaper()
-
-  const drawCoverStable = () => {
-    const bandH = 50
-    doc.setFillColor(...C.coverBandTop)
-    doc.rect(0, 0, pageW, bandH * 0.55, 'F')
-    doc.setFillColor(...C.coverBandMid)
-    doc.rect(0, bandH * 0.38, pageW, bandH * 0.62, 'F')
-
-    doc.setDrawColor(...C.accentBar)
-    doc.setLineWidth(0.4)
-    doc.line(MARGIN_MM, bandH - 2.5, pageW - MARGIN_MM, bandH - 2.5)
-
-    doc.setTextColor(...C.coverInk)
-    doc.setFont('helvetica', 'normal')
-    doc.setFontSize(8)
-    doc.text(sanitizePdfText('VIVE CRM | Informe de investigación'), MARGIN_MM, 13)
-
-    doc.setFont('helvetica', 'bold')
-    doc.setFontSize(19)
-    const title = sanitizePdfText(lead.business_name)
-    const nameLines = doc.splitTextToSize(title, innerW - 4) as string[]
-    let hy = 26
-    for (const line of nameLines) {
-      doc.text(line, MARGIN_MM, hy)
-      hy += 8
-    }
-
-    doc.setFont('helvetica', 'normal')
-    doc.setFontSize(8.5)
-    doc.text(sanitizePdfText(coverMeta.join('   |   ')), MARGIN_MM, bandH + 1)
-
-    doc.setFont('helvetica', 'italic')
-    doc.setFontSize(7.75)
-    doc.setTextColor(235, 228, 218)
-    const sub = sanitizePdfText(
-      'Documento generado desde la ficha (contenidos operativos y comerciales).',
-    )
-    const subLines = doc.splitTextToSize(sub, innerW - 6) as string[]
-    let sy = bandH + 8
-    for (const ln of subLines) {
-      doc.text(ln, MARGIN_MM, sy)
-      sy += 4
-    }
-
-    doc.setTextColor(...C.ink)
-    doc.setFont('helvetica', 'normal')
-    y = Math.max(bandH + subLines.length * 4.2 + 14, 56)
-  }
-
-  drawCoverStable()
+  drawFirstPageHeader()
 
   const sectionRule = () => {
-    ensureSpace(4)
+    ensureSpace(9)
+    y += 2
     doc.setDrawColor(...C.hairline)
-    doc.setLineWidth(0.12)
-    doc.line(MARGIN_MM, y, pageW - MARGIN_MM, y)
-    y += 6
+    doc.setLineWidth(0.1)
+    doc.line(MARGIN_MM + 12, y, pageW - MARGIN_MM - 12, y)
+    y += 7
   }
 
   const sectionTitle = (raw: string) => {
     const t = sanitizePdfText(raw)
-    ensureSpace(12)
-    doc.setFillColor(...C.accentBar)
-    doc.rect(MARGIN_MM, y - 0.5, 2.4, 6.2, 'F')
+    ensureSpace(14)
     doc.setFont('helvetica', 'bold')
-    doc.setFontSize(11)
+    doc.setFontSize(10.5)
     doc.setTextColor(...C.ink)
-    doc.text(t, MARGIN_MM + 5, y + 4.3)
-    y += 11
+    doc.text(t, MARGIN_MM, y + 4)
+    y += 7
+    doc.setDrawColor(...C.accentLine)
+    doc.setLineWidth(0.3)
+    doc.line(MARGIN_MM, y, MARGIN_MM + 32, y)
+    y += 9
     doc.setFont('helvetica', 'normal')
   }
 
   const fieldBlock = (label: string, value: string) => {
     const safeLabel = sanitizePdfText(label)
     const safeValue = sanitizePdfText(value)
-    const labelH = 4.2
-    const valueLines = doc.splitTextToSize(safeValue, innerW - 14) as string[]
-    const valueH = Math.max(valueLines.length * BODY_LINE_PT + 5, 8)
-    const blockH = labelH + valueH + 4
-
+    const labelH = 4
+    const valueLines = doc.splitTextToSize(safeValue, innerW - 4) as string[]
+    const blockH = labelH + valueLines.length * BODY_LINE_PT + 8
     ensureSpace(blockH)
 
-    doc.setFillColor(...C.valueBand)
-    doc.roundedRect(MARGIN_MM, y - 0.5, innerW, blockH - 1, 1.2, 1.2, 'F')
-    doc.setDrawColor(...C.hairline)
-    doc.setLineWidth(0.08)
-    doc.roundedRect(MARGIN_MM, y - 0.5, innerW, blockH - 1, 1.2, 1.2, 'S')
-
     doc.setFont('helvetica', 'bold')
-    doc.setFontSize(LABEL_SIZE)
+    doc.setFontSize(7.75)
     doc.setTextColor(...C.muted)
-    doc.text(safeLabel.toUpperCase(), MARGIN_MM + 4, y + 3.2)
-    y += labelH + 2
+    doc.text(safeLabel, MARGIN_MM, y + 3.6)
+    y += labelH + 1
 
     doc.setFont('helvetica', 'normal')
     doc.setFontSize(VALUE_SIZE)
     doc.setTextColor(...C.ink)
     for (const line of valueLines) {
-      ensureSpace(BODY_LINE_PT + 1)
-      doc.text(line, MARGIN_MM + 5, y + 3.6)
+      ensureSpace(BODY_LINE_PT + 0.5)
+      doc.text(line, MARGIN_MM + 1.5, y + 4)
       y += BODY_LINE_PT
     }
     y += 6
@@ -481,13 +479,18 @@ export function downloadLeadInvestigationPdf(
     doc.setPage(p)
     doc.setDrawColor(...C.hairline)
     doc.setLineWidth(0.1)
-    doc.line(MARGIN_MM, pageH - FOOTER_MM + 3, pageW - MARGIN_MM, pageH - FOOTER_MM + 3)
+    doc.line(MARGIN_MM, pageH - FOOTER_MM + 2, pageW - MARGIN_MM, pageH - FOOTER_MM + 2)
     doc.setFont('helvetica', 'normal')
-    doc.setFontSize(7.25)
+    doc.setFontSize(7)
     doc.setTextColor(...C.muted)
-    doc.text(sanitizePdfText(`Vive CRM · ${p} / ${total}`), pageW / 2, pageH - 6, {
-      align: 'center',
-    })
+    doc.text(
+      sanitizePdfText(`Página ${p} de ${total}`),
+      pageW - MARGIN_MM,
+      pageH - 5,
+      { align: 'right' },
+    )
+    doc.setFontSize(6.8)
+    doc.text(sanitizePdfText('Vive CRM'), MARGIN_MM, pageH - 5)
   }
 
   const year = new Date().getFullYear()
