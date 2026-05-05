@@ -17,7 +17,6 @@ import {
 import { useCallback, useEffect, useState } from 'react'
 import { ExpedienteEditor } from '@/components/leads/ExpedienteEditor'
 import { LeadEstadoIntercambioPanel } from '@/components/leads/LeadEstadoIntercambioPanel'
-import { InteractionTimeline } from '@/components/leads/InteractionTimeline'
 import { LeadStatusBadge } from '@/components/leads/LeadStatusBadge'
 import { LeadActions } from '@/components/leads/LeadActions'
 import { Button } from '@/components/ui/button'
@@ -34,12 +33,11 @@ import { downloadLeadInvestigationPdf } from '@/lib/generateLeadInvestigationPdf
 import {
   getLeadById,
   getLeadCompetitors,
-  getLeadInteractions,
   getLeadProposals,
   logLeadInteraction,
 } from '@/lib/supabase'
 import { useAppStore } from '@/store/useAppStore'
-import type { LeadCompetitor, LeadInteraction, LeadProposal } from '@/types/analytics'
+import type { LeadCompetitor, LeadProposal } from '@/types/analytics'
 import type { Lead, LeadPriority } from '@/types/lead'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
@@ -75,19 +73,16 @@ export function LeadDetail({ leadId }: LeadDetailProps) {
   const upsertLead = useAppStore((s) => s.upsertLead)
   const cached = useAppStore((s) => s.leads.find((l) => l.id === leadId))
   const [lead, setLead] = useState<Lead | null>(cached ?? null)
-  const [interactions, setInteractions] = useState<LeadInteraction[]>([])
   const [competitors, setCompetitors] = useState<LeadCompetitor[]>([])
   const [proposals, setProposals] = useState<LeadProposal[]>([])
   const [error, setError] = useState<string | null>(null)
   const [pdfBusy, setPdfBusy] = useState(false)
 
   const reloadSatellite = useCallback(async () => {
-    const [ints, comps, props] = await Promise.all([
-      getLeadInteractions(leadId).catch(() => [] as LeadInteraction[]),
+    const [comps, props] = await Promise.all([
       getLeadCompetitors(leadId).catch(() => [] as LeadCompetitor[]),
       getLeadProposals(leadId).catch(() => [] as LeadProposal[]),
     ])
-    setInteractions(ints)
     setCompetitors(comps)
     setProposals(props)
   }, [leadId])
@@ -131,20 +126,17 @@ export function LeadDetail({ leadId }: LeadDetailProps) {
   async function handleDownloadPdf() {
     setPdfBusy(true)
     try {
-      const [row, ints, comps, props] = await Promise.all([
+      const [row, comps, props] = await Promise.all([
         getLeadById(leadId),
-        getLeadInteractions(leadId).catch(() => [] as LeadInteraction[]),
         getLeadCompetitors(leadId).catch(() => [] as LeadCompetitor[]),
         getLeadProposals(leadId).catch(() => [] as LeadProposal[]),
       ])
       downloadLeadInvestigationPdf(row, {
-        interactions: ints,
         competitors: comps,
         proposals: props,
       })
       setLead(row)
       upsertLead(row)
-      setInteractions(ints)
       setCompetitors(comps)
       setProposals(props)
       toast.success('PDF descargado con toda la investigación')
@@ -621,20 +613,6 @@ export function LeadDetail({ leadId }: LeadDetailProps) {
             </CardContent>
           </Card>
         ) : null}
-
-        <Card className="border-amber-500/15 bg-card/55 backdrop-blur-md">
-          <CardHeader>
-            <CardTitle className="text-lg text-stone-50">
-              Histórico de interacciones
-            </CardTitle>
-            <CardDescription>
-              Eventos para analítica (envíos WA, copias, etc.)
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <InteractionTimeline items={interactions} />
-          </CardContent>
-        </Card>
           </TabsContent>
         </Tabs>
       </div>

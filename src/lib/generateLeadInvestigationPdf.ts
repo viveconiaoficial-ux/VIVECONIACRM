@@ -1,10 +1,9 @@
 import { jsPDF } from 'jspdf'
 import { STATUS_LABELS } from '@/constants'
-import type { LeadCompetitor, LeadInteraction, LeadProposal } from '@/types/analytics'
+import type { LeadCompetitor, LeadProposal } from '@/types/analytics'
 import type { Lead } from '@/types/lead'
 
 export interface LeadInvestigationPdfContext {
-  interactions: LeadInteraction[]
   competitors: LeadCompetitor[]
   proposals: LeadProposal[]
 }
@@ -164,6 +163,10 @@ function addBlocksForLead(lead: Lead, ctx: LeadInvestigationPdfContext): {
     b('Activos visuales y referencias', lead.expediente_visual_assets),
     b('Estrategia de venta', lead.expediente_sales_strategy),
     b('Mensaje de outreach', lead.expediente_outreach_message),
+    b(
+      'Segundo mensaje (sin respuesta)',
+      lead.expediente_followup_no_response,
+    ),
   ])
 
   // 7 · Deal
@@ -242,27 +245,7 @@ function addBlocksForLead(lead: Lead, ctx: LeadInvestigationPdfContext): {
     if (blocks.length) sections.push({ title: 'Propuestas e informes', blocks })
   }
 
-  // 12 · Interacciones
-  if (ctx.interactions.length) {
-    const sorted = [...ctx.interactions].sort(
-      (a, b) =>
-        new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
-    )
-    const blocks: Block[] = []
-    for (const ev of sorted) {
-      const when = fmtDate(ev.created_at) ?? ev.created_at
-      const meta =
-        ev.metadata && Object.keys(ev.metadata).length > 0
-          ? `\n\n${JSON.stringify(ev.metadata, null, 2)}`
-          : ''
-      const ch = txt(ev.channel)
-      const line = `${ev.event_type}${ch ? ` · ${ch}` : ''}${meta}`
-      blocks.push({ label: when, value: line })
-    }
-    sections.push({ title: 'Histórico de interacciones', blocks })
-  }
-
-  // 13 · Payload
+  // 12 · Payload
   if (lead.research_payload && Object.keys(lead.research_payload).length > 0) {
     try {
       const json = JSON.stringify(lead.research_payload, null, 2)

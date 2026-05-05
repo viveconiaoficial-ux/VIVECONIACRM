@@ -18,6 +18,7 @@ export function createLeadInsert(data: {
   expediente_visual_assets?: string | null
   expediente_sales_strategy?: string | null
   expediente_outreach_message?: string | null
+  expediente_followup_no_response?: string | null
 }): LeadInsert {
   const t = (s: string | null | undefined) =>
     s != null && String(s).trim() !== '' ? String(s).trim() : null
@@ -41,6 +42,7 @@ export function createLeadInsert(data: {
     expediente_visual_assets: t(data.expediente_visual_assets),
     expediente_sales_strategy: t(data.expediente_sales_strategy),
     expediente_outreach_message: t(data.expediente_outreach_message),
+    expediente_followup_no_response: t(data.expediente_followup_no_response),
     social_photos_urls: null,
     brand_style_notes: null,
     social_quality: null,

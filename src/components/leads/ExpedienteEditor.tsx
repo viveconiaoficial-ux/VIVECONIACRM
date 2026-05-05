@@ -32,6 +32,9 @@ export function ExpedienteEditor({ lead, onSaved }: ExpedienteEditorProps) {
   const [outreachMessage, setOutreachMessage] = useState(
     lead.expediente_outreach_message ?? '',
   )
+  const [followupNoResponse, setFollowupNoResponse] = useState(
+    lead.expediente_followup_no_response ?? '',
+  )
   const [saving, setSaving] = useState(false)
 
   async function handleSave() {
@@ -43,6 +46,7 @@ export function ExpedienteEditor({ lead, onSaved }: ExpedienteEditorProps) {
         expediente_visual_assets: visualAssets.trim() || null,
         expediente_sales_strategy: salesStrategy.trim() || null,
         expediente_outreach_message: outreachMessage.trim() || null,
+        expediente_followup_no_response: followupNoResponse.trim() || null,
         updated_at: now,
         last_contact_date: lead.last_contact_date ?? now,
       })
@@ -59,7 +63,7 @@ export function ExpedienteEditor({ lead, onSaved }: ExpedienteEditorProps) {
       onSaved?.(updated)
     } catch (e) {
       console.error(e)
-      toast.error('No se pudo guardar. Revisa conexión y columnas en BD (003).')
+      toast.error('No se pudo guardar. Revisa conexión y columnas en BD (003, 007).')
     } finally {
       setSaving(false)
     }
@@ -69,7 +73,8 @@ export function ExpedienteEditor({ lead, onSaved }: ExpedienteEditorProps) {
     analysis !== (lead.expediente_analysis ?? '') ||
     visualAssets !== (lead.expediente_visual_assets ?? '') ||
     salesStrategy !== (lead.expediente_sales_strategy ?? '') ||
-    outreachMessage !== (lead.expediente_outreach_message ?? '')
+    outreachMessage !== (lead.expediente_outreach_message ?? '') ||
+    followupNoResponse !== (lead.expediente_followup_no_response ?? '')
 
   return (
     <Card
@@ -88,9 +93,9 @@ export function ExpedienteEditor({ lead, onSaved }: ExpedienteEditorProps) {
             </span>
           </CardTitle>
           <CardDescription className="max-w-2xl text-stone-500">
-            Cuatro bloques: análisis, activos para vídeo, estrategia y mensaje largo para
-            WhatsApp. <strong className="font-medium text-stone-400">Guardar en Supabase</strong>{' '}
-            persiste los cambios. Si rellenas el mensaje largo, el primer botón de WA usa
+            Cinco bloques: análisis, activos, estrategia, primer mensaje WA y segundo
+            mensaje si no hubo respuesta. <strong className="font-medium text-stone-400">Guardar en Supabase</strong>{' '}
+            persiste los cambios. Si rellenas el mensaje largo (4), el primer botón de WA usa
             ese texto.
           </CardDescription>
         </div>
@@ -155,6 +160,18 @@ export function ExpedienteEditor({ lead, onSaved }: ExpedienteEditorProps) {
             placeholder="Texto largo firmado, listo para enviar o pulir..."
             rows={12}
             className="min-h-[200px] rounded-xl border-amber-500/15 bg-stone-950/40 text-stone-100 placeholder:text-stone-600"
+          />
+        </div>
+        <div className="space-y-2">
+          <label className="text-sm font-medium text-amber-200/90">
+            5. Segundo mensaje enviado al no tener respuesta
+          </label>
+          <Textarea
+            value={followupNoResponse}
+            onChange={(e) => setFollowupNoResponse(e.target.value)}
+            placeholder="Tono amable, recuerda el contexto y ofrece un siguiente paso sin presionar..."
+            rows={10}
+            className="min-h-[160px] rounded-xl border-amber-500/15 bg-stone-950/40 text-stone-100 placeholder:text-stone-600"
           />
         </div>
       </CardContent>

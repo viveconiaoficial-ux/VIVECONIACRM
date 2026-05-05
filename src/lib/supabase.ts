@@ -103,18 +103,6 @@ export async function logLeadInteraction(
   return data as LeadInteraction
 }
 
-export async function getLeadInteractions(
-  leadId: string,
-): Promise<LeadInteraction[]> {
-  const { data, error } = await supabase
-    .from('lead_interactions')
-    .select('*')
-    .eq('lead_id', leadId)
-    .order('created_at', { ascending: false })
-  if (error) throw error
-  return data as LeadInteraction[]
-}
-
 export async function getLeadCompetitors(
   leadId: string,
 ): Promise<LeadCompetitor[]> {

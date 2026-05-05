@@ -50,6 +50,7 @@ export function NewLeadDialog({ open, onOpenChange }: NewLeadDialogProps) {
   const [expAssets, setExpAssets] = useState('')
   const [expStrategy, setExpStrategy] = useState('')
   const [expMessage, setExpMessage] = useState('')
+  const [expFollowupNoResponse, setExpFollowupNoResponse] = useState('')
 
   const [saving, setSaving] = useState(false)
 
@@ -68,6 +69,7 @@ export function NewLeadDialog({ open, onOpenChange }: NewLeadDialogProps) {
     setExpAssets('')
     setExpStrategy('')
     setExpMessage('')
+    setExpFollowupNoResponse('')
   }
 
   async function handleSubmit() {
@@ -92,6 +94,7 @@ export function NewLeadDialog({ open, onOpenChange }: NewLeadDialogProps) {
         expediente_visual_assets: expAssets || null,
         expediente_sales_strategy: expStrategy || null,
         expediente_outreach_message: expMessage || null,
+        expediente_followup_no_response: expFollowupNoResponse || null,
       })
       const created = await insertLead(row)
       upsertLead(created)
@@ -102,7 +105,7 @@ export function NewLeadDialog({ open, onOpenChange }: NewLeadDialogProps) {
     } catch (e) {
       console.error(e)
       toast.error(
-        'Error al crear. ¿Ejecutaste la migración 003 (expediente) en Supabase?',
+        'Error al crear. ¿Ejecutaste las migraciones de expediente (003, 007) en Supabase?',
       )
     } finally {
       setSaving(false)
@@ -308,12 +311,12 @@ export function NewLeadDialog({ open, onOpenChange }: NewLeadDialogProps) {
             </div>
             <div className="space-y-2">
               <label className="text-xs font-medium text-amber-200/80">
-                4. Mensaje (WhatsApp)
+                5. Segundo mensaje (sin respuesta)
               </label>
               <Textarea
-                value={expMessage}
-                onChange={(e) => setExpMessage(e.target.value)}
-                rows={8}
+                value={expFollowupNoResponse}
+                onChange={(e) => setExpFollowupNoResponse(e.target.value)}
+                rows={6}
                 className="rounded-xl border-amber-500/15 bg-stone-950/40"
               />
             </div>

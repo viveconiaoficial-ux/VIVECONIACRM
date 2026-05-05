@@ -87,6 +87,8 @@ export interface Lead {
   expediente_visual_assets: string | null
   expediente_sales_strategy: string | null
   expediente_outreach_message: string | null
+  /** Segundo mensaje si no hubo respuesta al primero (migración 007) */
+  expediente_followup_no_response: string | null
 }
 
 export type LeadInsert = Omit<Lead, 'id' | 'created_at' | 'updated_at'>
