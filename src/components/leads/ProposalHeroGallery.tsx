@@ -29,16 +29,12 @@ export function ProposalHeroGallery({
       <div className="pointer-events-none absolute -bottom-32 -left-16 size-[22rem] rounded-full bg-amber-900/[0.05] blur-3xl" />
 
       <div className="relative px-5 pb-6 pt-5 sm:px-8 sm:pb-8 sm:pt-7">
-        <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="space-y-2">
             <div className="h-px w-12 rounded-full bg-gradient-to-r from-amber-400/70 to-transparent" />
             <h2 className="text-[1rem] font-semibold tracking-[0.02em] text-stone-50 sm:text-[1.05rem]">
               Piezas junto a la propuesta
             </h2>
-            <p className="max-w-xl text-[13px] leading-relaxed text-stone-500">
-              Vista previa de lo que enviaste con la propuesta. Se muestra aquí, justo debajo de las
-              pestañas, para localizarlo al instante.
-            </p>
           </div>
           <p className="shrink-0 text-[11px] font-medium tabular-nums tracking-wide text-amber-200/55">
             {paths.length === 1 ? '1 archivo' : `${paths.length} archivos`}
@@ -46,10 +42,17 @@ export function ProposalHeroGallery({
         </div>
 
         <div className="relative">
-          <div className="-mx-1 flex gap-3 overflow-x-auto overflow-y-visible pb-1 pt-1 [scrollbar-width:thin] [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-amber-500/25 [&::-webkit-scrollbar-track]:bg-transparent sm:gap-4">
+          <div
+            className={cn(
+              '-mx-1 pb-1 pt-1',
+              paths.length <= 2
+                ? 'grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4'
+                : 'flex gap-3 overflow-x-auto overflow-y-visible [scrollbar-width:thin] [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-amber-500/25 [&::-webkit-scrollbar-track]:bg-transparent sm:gap-4',
+            )}
+          >
             {paths.map((storagePath, i) => {
               const src = proposalImagePublicUrl(storagePath)
-              const isFirst = i === 0
+              const few = paths.length <= 2
               return (
                 <a
                   key={storagePath}
@@ -58,46 +61,52 @@ export function ProposalHeroGallery({
                   rel="noreferrer"
                   title="Abrir en tamaño completo"
                   className={cn(
-                    'group relative shrink-0 overflow-hidden rounded-2xl',
+                    'group relative flex overflow-hidden rounded-2xl',
                     'border border-white/[0.06]',
-                    'bg-gradient-to-b from-stone-900/90 to-black/60',
+                    'bg-stone-950/90',
                     'shadow-[0_12px_40px_-12px_rgba(0,0,0,0.6)]',
                     'ring-1 ring-inset ring-white/[0.04]',
                     'transition duration-300',
                     'hover:border-amber-500/22 hover:ring-amber-400/15',
-                    isFirst ? 'w-[min(100%,calc(100vw-3rem))] sm:w-[340px]' : 'w-[200px]',
+                    'items-center justify-center p-2 sm:p-3',
+                    few
+                      ? cn(
+                          'min-h-[200px] w-full max-h-[min(52vh,420px)] sm:min-h-[240px]',
+                          paths.length === 1 && 'mx-auto sm:max-w-3xl sm:col-span-2',
+                        )
+                      : 'h-[min(52vh,380px)] w-[min(85vw,280px)] shrink-0 sm:w-[300px]',
                   )}
                   style={{
                     animationDelay: `${i * 40}ms`,
                   }}
                 >
-                  <span className="pointer-events-none absolute inset-x-0 top-0 z-10 h-8 bg-gradient-to-b from-black/40 to-transparent opacity-70" />
                   <img
                     src={src}
                     alt=""
                     loading={i <= 2 ? 'eager' : 'lazy'}
                     className={cn(
-                      'block w-full bg-stone-950',
-                      'object-cover object-center',
-                      isFirst
-                        ? 'aspect-[21/13] max-h-[min(48vh,360px)] sm:max-h-[320px]'
-                        : 'aspect-[4/5] max-h-[200px]',
+                      'max-h-full max-w-full object-contain object-center',
+                      few ? 'h-auto w-full' : 'h-full w-full',
                     )}
                   />
-                  <span className="pointer-events-none absolute inset-0 rounded-2xl ring-1 ring-inset ring-black/60" />
+                  <span className="pointer-events-none absolute inset-0 rounded-2xl ring-1 ring-inset ring-black/50" />
                 </a>
               )
             })}
           </div>
 
-          <div
-            aria-hidden
-            className="pointer-events-none absolute inset-y-1 right-0 z-[1] w-10 bg-gradient-to-l from-[#0c0a08] to-transparent opacity-95 sm:hidden"
-          />
-          <div
-            aria-hidden
-            className="pointer-events-none absolute inset-y-1 left-0 z-[1] w-10 bg-gradient-to-r from-[#141210] to-transparent opacity-90 sm:hidden"
-          />
+          {paths.length > 2 ? (
+            <>
+              <div
+                aria-hidden
+                className="pointer-events-none absolute inset-y-1 right-0 z-[1] w-10 bg-gradient-to-l from-[#0c0a08] to-transparent opacity-95 sm:hidden"
+              />
+              <div
+                aria-hidden
+                className="pointer-events-none absolute inset-y-1 left-0 z-[1] w-10 bg-gradient-to-r from-[#141210] to-transparent opacity-90 sm:hidden"
+              />
+            </>
+          ) : null}
         </div>
       </div>
     </section>
