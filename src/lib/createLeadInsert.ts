@@ -81,5 +81,6 @@ export function createLeadInsert(data: {
     strategy_notes: null,
     video_hook_notes: null,
     research_payload: null,
+    proposal_image_paths: [],
   }
 }

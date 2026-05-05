@@ -167,6 +167,12 @@ function addBlocksForLead(lead: Lead, ctx: LeadInvestigationPdfContext): {
       'Segundo mensaje (sin respuesta)',
       lead.expediente_followup_no_response,
     ),
+    lead.proposal_image_paths?.length
+      ? {
+          label: 'Imágenes con la propuesta',
+          value: `${lead.proposal_image_paths.length} archivo(s) en Storage (ver ficha en CRM)`,
+        }
+      : null,
   ])
 
   // 7 · Deal

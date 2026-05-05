@@ -1,6 +1,6 @@
 import { useEffect, useCallback } from 'react'
 import { toast } from 'sonner'
-import { supabase, getLeads } from '@/lib/supabase'
+import { normalizeLeadRow, supabase, getLeads } from '@/lib/supabase'
 import { useAppStore } from '@/store/useAppStore'
 import type { Lead } from '@/types/lead'
 
@@ -51,7 +51,7 @@ export function useLeadsSubscriptions(): void {
         { event: '*', schema: 'public', table: 'leads' },
         (payload) => {
           if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
-            upsertLead(payload.new as Lead)
+            upsertLead(normalizeLeadRow(payload.new as Lead))
           }
           if (payload.eventType === 'DELETE') {
             const oldRow = payload.old as { id?: string }

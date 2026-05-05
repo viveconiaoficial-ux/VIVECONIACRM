@@ -30,13 +30,17 @@ const LEGACY_STATUS_MAP: Record<string, LeadStatus> = {
   seguimiento: 'contestada_seguimiento',
 }
 
-function normalizeLeadRow(row: Lead): Lead {
+export function normalizeLeadRow(row: Lead): Lead {
   const raw = row.status as string
   let status = LEGACY_STATUS_MAP[raw] ?? raw
   if (!LEAD_STATUSES.includes(status as LeadStatus)) {
     status = 'lead_frio'
   }
-  return { ...row, status: status as LeadStatus }
+  const pathsRaw = (row as { proposal_image_paths?: unknown }).proposal_image_paths
+  const proposal_image_paths = Array.isArray(pathsRaw)
+    ? (pathsRaw as string[]).filter((p) => typeof p === 'string' && p.length > 0)
+    : []
+  return { ...row, status: status as LeadStatus, proposal_image_paths }
 }
 
 export async function getLeads(): Promise<Lead[]> {

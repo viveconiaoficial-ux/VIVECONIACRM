@@ -89,6 +89,11 @@ export interface Lead {
   expediente_outreach_message: string | null
   /** Segundo mensaje si no hubo respuesta al primero (migración 007) */
   expediente_followup_no_response: string | null
+  /**
+   * Rutas en Storage (`proposal-images/{lead_id}/...`), enviadas con la propuesta.
+   * Migración 008.
+   */
+  proposal_image_paths: string[]
 }
 
 export type LeadInsert = Omit<Lead, 'id' | 'created_at' | 'updated_at'>
