@@ -206,9 +206,10 @@ export function ExpedienteEditor({ lead, onSaved }: ExpedienteEditorProps) {
             </span>
           </CardTitle>
           <CardDescription className="max-w-2xl text-stone-500">
-            Seis apartados de texto más imágenes de la propuesta: las fotos se comprimen al
-            subir y aparecen arriba en la ficha. <strong className="font-medium text-stone-400">Guardar</strong>{' '}
-            solo aplica a los cuadros de texto; las imágenes se guardan al subirlas o borrarlas.
+            Texto en seis bloques numerados; las{' '}
+            <strong className="font-medium text-stone-400">imágenes de la propuesta</strong> van
+            aparte (se guardan al subir). Si rellenas el mensaje largo (4), el primer botón de WA
+            usa ese texto.
           </CardDescription>
         </div>
         <Button
@@ -290,7 +291,7 @@ export function ExpedienteEditor({ lead, onSaved }: ExpedienteEditorProps) {
         <div className="space-y-3 rounded-xl border border-amber-500/15 bg-stone-950/25 p-4">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <label className="text-sm font-medium text-amber-200/90">
-              6. Imágenes enviadas con la propuesta
+              Imágenes enviadas con la propuesta
             </label>
             <div className="flex items-center gap-2">
               <input

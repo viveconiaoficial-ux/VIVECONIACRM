@@ -8,14 +8,67 @@ export interface LeadInvestigationPdfContext {
   proposals: LeadProposal[]
 }
 
-/** Colores (RGB 0–255): veta ámbar sobre neutros cálidos */
+/** Fondo papel, tintas y acento (RGB 0-255): informe sobrio tipo editorial */
 const C = {
-  headerBg: [62, 42, 18] as [number, number, number],
-  headerText: [255, 251, 245] as [number, number, number],
-  accent: [168, 100, 28] as [number, number, number],
-  sep: [230, 220, 205] as [number, number, number],
-  text: [35, 32, 28] as [number, number, number],
-  muted: [105, 98, 88] as [number, number, number],
+  paper: [252, 250, 248] as [number, number, number],
+  coverBandTop: [22, 18, 15] as [number, number, number],
+  coverBandMid: [45, 36, 28] as [number, number, number],
+  coverInk: [254, 252, 248] as [number, number, number],
+  ink: [34, 32, 28] as [number, number, number],
+  muted: [110, 102, 94] as [number, number, number],
+  hairline: [228, 218, 208] as [number, number, number],
+  accentBar: [186, 124, 48] as [number, number, number],
+  valueBand: [248, 244, 238] as [number, number, number],
+}
+
+const MARGIN_MM = 20
+const FOOTER_MM = 12
+const BODY_LINE_PT = 4.85
+const VALUE_SIZE = 10
+const LABEL_SIZE = 7.25
+
+/** Helvetica en jsPDF (WinAnsi) no dibuja bien tipografía “rica”, símbolos ni emoji. */
+function sanitizePdfText(input: string): string {
+  let s = input
+    .replace(/\uFEFF/g, '')
+    .replace(/\u2028|\u2029/g, '\n')
+    .replace(/\r\n/g, '\n')
+    .replace(/\r/g, '\n')
+    .replace(/[\u2013\u2014]/g, '-')
+    .replace(/[\u2018\u2019\u201A\u201B]/g, "'")
+    .replace(/[\u201C\u201D\u201E\u201F«»„]/g, '"')
+    .replace(/\u2026/g, '...')
+    .replace(/\u2022|\u2023|\u2043|\u2219|\u25E6/g, '*')
+    .replace(/[\u2605\u2606\u272F\u2734\u2B50]/g, '*')
+    .replace(/\u00AD/g, '')
+    .replace(/\u00A0/g, ' ')
+    .replace(/\u2212/g, '-')
+    .replace(/\u03BC/g, 'u')
+    .replace(/[\u200B-\u200D\u2060]/g, '')
+    .replace(/\u202F|\u2007|\u2009|\u200A|\u205F/g, ' ')
+    .replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g, '')
+
+  let out = ''
+  for (const ch of s.normalize('NFKC')) {
+    const c = ch.codePointAt(0)!
+    if (c === 10) {
+      out += '\n'
+      continue
+    }
+    if (c === 9) {
+      out += ' '
+      continue
+    }
+    if (c >= 32 && c <= 126) {
+      out += ch
+      continue
+    }
+    if (c >= 160 && c <= 255) {
+      out += ch
+      continue
+    }
+  }
+  return out.replace(/\n{3,}/g, '\n\n').trimEnd()
 }
 
 function txt(raw: string | null | undefined): string | null {
@@ -27,17 +80,20 @@ function txt(raw: string | null | undefined): string | null {
 function fmtDate(iso: string | null | undefined): string | null {
   if (!iso) return null
   try {
-    return new Intl.DateTimeFormat('es-ES', {
-      dateStyle: 'long',
-      timeStyle: 'short',
-    }).format(new Date(iso))
+    const d = sanitizePdfText(
+      new Intl.DateTimeFormat('es-ES', {
+        dateStyle: 'long',
+        timeStyle: 'short',
+      }).format(new Date(iso)),
+    )
+    return d || iso
   } catch {
-    return iso
+    return sanitizePdfText(iso)
   }
 }
 
 function fileSlug(name: string): string {
-  const base = name
+  const base = sanitizePdfText(name)
     .replace(/[/\\?%*:|"<>]/g, '_')
     .replace(/\s+/g, '_')
     .slice(0, 72)
@@ -45,9 +101,9 @@ function fileSlug(name: string): string {
 }
 
 function fileSlugFromLead(lead: Lead): string {
-  const parts = [lead.business_name]
+  const parts = [sanitizePdfText(lead.business_name)]
   const contact = lead.contact_name?.trim()
-  if (contact) parts.push(contact)
+  if (contact) parts.push(sanitizePdfText(contact))
   return fileSlug(parts.join(' '))
 }
 
@@ -74,9 +130,11 @@ function addBlocksForLead(lead: Lead, ctx: LeadInvestigationPdfContext): {
     return d ? { label, value: d } : null
   }
 
-  // 1 · Embudo
   const embudo: (Block | null)[] = [
-    { label: 'Estado del embudo', value: STATUS_LABELS[lead.status] },
+    {
+      label: 'Estado del embudo',
+      value: sanitizePdfText(STATUS_LABELS[lead.status]),
+    },
     b('Prioridad', lead.priority ?? undefined),
     lead.score != null ? { label: 'Score', value: `${lead.score}/100` } : null,
     bDate('Alta en CRM', lead.created_at),
@@ -86,10 +144,9 @@ function addBlocksForLead(lead: Lead, ctx: LeadInvestigationPdfContext): {
   ]
   pushSection('Embudo y priorización', embudo)
 
-  // 2 · Contacto (sin dejar solo “sin web” si no hay más datos)
   const contactBits: (Block | null)[] = [
     b('Persona de contacto', lead.contact_name),
-    b('Contactos (varios)', lead.contact_names),
+    b('Contactos', lead.contact_names),
     b('Email', lead.email),
     b('WhatsApp', lead.whatsapp_phone),
     b('Sector', lead.sector),
@@ -106,10 +163,9 @@ function addBlocksForLead(lead: Lead, ctx: LeadInvestigationPdfContext): {
     pushSection('Contacto', finalContact)
   }
 
-  // 3 · Ubicación
   const mapsLine =
     lead.maps_rating != null && lead.review_count != null
-      ? `${lead.maps_rating} ★ · ${lead.review_count} reseñas`
+      ? `${lead.maps_rating} estrellas (${lead.review_count} reseñas)`
       : null
   pushSection('Ubicación y Maps', [
     b('Ubicación', lead.location_label),
@@ -120,7 +176,6 @@ function addBlocksForLead(lead: Lead, ctx: LeadInvestigationPdfContext): {
     b('URL Google Maps', lead.google_maps_url),
   ])
 
-  // 4 · Digital
   const ig = lead.instagram_handle
     ? `@${lead.instagram_handle.replace(/^@/, '')}`
     : null
@@ -147,7 +202,6 @@ function addBlocksForLead(lead: Lead, ctx: LeadInvestigationPdfContext): {
   }
   pushSection('Presencia digital y marca', dig)
 
-  // 5 · Investigación
   pushSection('Investigación cualitativa', [
     b('Oportunidad', lead.investigation_opportunity),
     b('Dolor / necesidad', lead.investigation_pain),
@@ -157,7 +211,6 @@ function addBlocksForLead(lead: Lead, ctx: LeadInvestigationPdfContext): {
     b('Gancho vídeo / seguimiento', lead.video_hook_notes),
   ])
 
-  // 6 · Expediente
   pushSection('Expediente comercial', [
     b('Análisis', lead.expediente_analysis),
     b('Activos visuales y referencias', lead.expediente_visual_assets),
@@ -170,12 +223,11 @@ function addBlocksForLead(lead: Lead, ctx: LeadInvestigationPdfContext): {
     lead.proposal_image_paths?.length
       ? {
           label: 'Imágenes con la propuesta',
-          value: `${lead.proposal_image_paths.length} archivo(s) en Storage (ver ficha en CRM)`,
+          value: `${lead.proposal_image_paths.length} archivo(s) enlazados en el CRM.`,
         }
       : null,
   ])
 
-  // 7 · Deal
   const budget =
     lead.deal_budget_amount != null
       ? `${lead.deal_budget_amount} ${txt(lead.deal_budget_currency) ?? 'EUR'}`
@@ -192,7 +244,6 @@ function addBlocksForLead(lead: Lead, ctx: LeadInvestigationPdfContext): {
     b('Motivo de rechazo o descarte', lead.deal_rejection_reason),
   ])
 
-  // 8 · Actividad WA / vídeo
   pushSection('Vídeo y WhatsApp', [
     b('URL del vídeo', lead.video_url),
     bDate('Vídeo registrado', lead.video_created_at),
@@ -201,19 +252,17 @@ function addBlocksForLead(lead: Lead, ctx: LeadInvestigationPdfContext): {
     bDate('WA mensaje 2 enviado', lead.wa_msg2_sent_at),
   ])
 
-  // 9 · Notas
   if (txt(lead.notes)) {
     pushSection('Notas del pipeline', [{ label: 'Notas', value: lead.notes!.trim() }])
   }
 
-  // 10 · Competencia
   if (ctx.competitors.length) {
     const blocks: Block[] = []
     for (const c of ctx.competitors) {
       const lines: string[] = []
       const label = txt(c.name) ?? 'Competidor'
       const meta = [
-        c.rating != null ? `${c.rating} ★` : null,
+        c.rating != null ? `Valoración ${c.rating}/5` : null,
         c.review_count != null ? `${c.review_count} reseñas` : null,
         c.has_website != null ? (c.has_website ? 'Con web' : 'Sin web') : null,
         txt(c.website_quality),
@@ -221,7 +270,7 @@ function addBlocksForLead(lead: Lead, ctx: LeadInvestigationPdfContext): {
         txt(c.opening_hours),
         txt(c.threat_level),
       ].filter(Boolean) as string[]
-      if (meta.length) lines.push(meta.join(' · '))
+      if (meta.length) lines.push(meta.join(' | '))
       const note = txt(c.notes)
       if (note) lines.push(note)
       if (lines.length) blocks.push({ label, value: lines.join('\n') })
@@ -229,29 +278,26 @@ function addBlocksForLead(lead: Lead, ctx: LeadInvestigationPdfContext): {
     if (blocks.length) sections.push({ title: 'Competencia', blocks })
   }
 
-  // 11 · Propuestas
   if (ctx.proposals.length) {
     const blocks: Block[] = []
     for (const p of ctx.proposals) {
-      const head = `${txt(p.title) ?? p.kind} · ${fmtDate(p.created_at) ?? ''}`.trim()
+      const head = `${txt(p.title) ?? p.kind} (${fmtDate(p.created_at) ?? ''})`.trim()
       const parts: string[] = []
       const kind = txt(p.kind)
       const src = txt(p.source)
       if (kind) parts.push(`Tipo: ${kind}`)
       if (src) parts.push(`Origen: ${src}`)
-      let json = ''
       try {
-        json = JSON.stringify(p.sections, null, 2)
+        const json = JSON.stringify(p.sections, null, 2)
+        if (json && json !== '{}') parts.push(json)
       } catch {
-        json = String(p.sections)
+        parts.push(String(p.sections))
       }
-      if (json && json !== '{}') parts.push(json)
       if (parts.length) blocks.push({ label: head, value: parts.join('\n\n') })
     }
     if (blocks.length) sections.push({ title: 'Propuestas e informes', blocks })
   }
 
-  // 12 · Payload
   if (lead.research_payload && Object.keys(lead.research_payload).length > 0) {
     try {
       const json = JSON.stringify(lead.research_payload, null, 2)
@@ -264,8 +310,13 @@ function addBlocksForLead(lead: Lead, ctx: LeadInvestigationPdfContext): {
     }
   }
 
-  const gen = fmtDate(new Date().toISOString()) ?? ''
-  const coverMeta = [gen, `ID: ${lead.id}`]
+  const gen = sanitizePdfText(
+    new Intl.DateTimeFormat('es-ES', {
+      dateStyle: 'medium',
+      timeStyle: 'short',
+    }).format(new Date()),
+  )
+  const coverMeta = [gen, `ID: ${sanitizePdfText(lead.id)}`]
 
   return { coverMeta, sections }
 }
@@ -277,97 +328,142 @@ export function downloadLeadInvestigationPdf(
   const { coverMeta, sections } = addBlocksForLead(lead, ctx)
 
   const doc = new jsPDF({ unit: 'mm', format: 'a4' })
-  const margin = 16
   const pageW = doc.internal.pageSize.getWidth()
   const pageH = doc.internal.pageSize.getHeight()
-  const contentW = pageW - margin * 2
-  let y = 0
+  const innerW = pageW - MARGIN_MM * 2
+  let y = MARGIN_MM
 
-  const ensure = (h: number) => {
-    if (y + h > pageH - 18) {
+  function fillPaper(): void {
+    doc.setFillColor(...C.paper)
+    doc.rect(0, 0, pageW, pageH, 'F')
+  }
+
+  const ensureSpace = (hMm: number) => {
+    if (y + hMm > pageH - FOOTER_MM) {
       doc.addPage()
-      y = margin
+      fillPaper()
+      y = MARGIN_MM
     }
   }
 
-  const drawCover = () => {
-    doc.setFillColor(...C.headerBg)
-    doc.rect(0, 0, pageW, 32, 'F')
-    doc.setTextColor(...C.headerText)
-    doc.setFont('helvetica', 'normal')
-    doc.setFontSize(8.5)
-    doc.text('Vive CRM — Informe de investigación', margin, 11)
-    doc.setFont('helvetica', 'bold')
-    doc.setFontSize(17)
-    const nameLines = doc.splitTextToSize(lead.business_name, contentW) as string[]
-    let hy = 20
-    for (const line of nameLines) {
-      doc.text(line, margin, hy)
-      hy += 7
-    }
+  fillPaper()
+
+  const drawCoverStable = () => {
+    const bandH = 50
+    doc.setFillColor(...C.coverBandTop)
+    doc.rect(0, 0, pageW, bandH * 0.55, 'F')
+    doc.setFillColor(...C.coverBandMid)
+    doc.rect(0, bandH * 0.38, pageW, bandH * 0.62, 'F')
+
+    doc.setDrawColor(...C.accentBar)
+    doc.setLineWidth(0.4)
+    doc.line(MARGIN_MM, bandH - 2.5, pageW - MARGIN_MM, bandH - 2.5)
+
+    doc.setTextColor(...C.coverInk)
     doc.setFont('helvetica', 'normal')
     doc.setFontSize(8)
-    doc.text(coverMeta.join(' · '), margin, hy + 3)
-    doc.setTextColor(...C.text)
-    y = 40
+    doc.text(sanitizePdfText('VIVE CRM | Informe de investigación'), MARGIN_MM, 13)
+
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(19)
+    const title = sanitizePdfText(lead.business_name)
+    const nameLines = doc.splitTextToSize(title, innerW - 4) as string[]
+    let hy = 26
+    for (const line of nameLines) {
+      doc.text(line, MARGIN_MM, hy)
+      hy += 8
+    }
+
+    doc.setFont('helvetica', 'normal')
+    doc.setFontSize(8.5)
+    doc.text(sanitizePdfText(coverMeta.join('   |   ')), MARGIN_MM, bandH + 1)
+
+    doc.setFont('helvetica', 'italic')
+    doc.setFontSize(7.75)
+    doc.setTextColor(235, 228, 218)
+    const sub = sanitizePdfText(
+      'Documento generado desde la ficha (contenidos operativos y comerciales).',
+    )
+    const subLines = doc.splitTextToSize(sub, innerW - 6) as string[]
+    let sy = bandH + 8
+    for (const ln of subLines) {
+      doc.text(ln, MARGIN_MM, sy)
+      sy += 4
+    }
+
+    doc.setTextColor(...C.ink)
+    doc.setFont('helvetica', 'normal')
+    y = Math.max(bandH + subLines.length * 4.2 + 14, 56)
   }
+
+  drawCoverStable()
 
   const sectionRule = () => {
-    ensure(2)
-    doc.setDrawColor(...C.sep)
-    doc.setLineWidth(0.25)
-    doc.line(margin, y, pageW - margin, y)
-    y += 5
+    ensureSpace(4)
+    doc.setDrawColor(...C.hairline)
+    doc.setLineWidth(0.12)
+    doc.line(MARGIN_MM, y, pageW - MARGIN_MM, y)
+    y += 6
   }
 
-  const sectionTitle = (t: string) => {
-    ensure(12)
-    doc.setFillColor(...C.accent)
-    doc.rect(margin, y - 0.5, 1.3, 6, 'F')
+  const sectionTitle = (raw: string) => {
+    const t = sanitizePdfText(raw)
+    ensureSpace(12)
+    doc.setFillColor(...C.accentBar)
+    doc.rect(MARGIN_MM, y - 0.5, 2.4, 6.2, 'F')
     doc.setFont('helvetica', 'bold')
     doc.setFontSize(11)
-    doc.setTextColor(...C.text)
-    doc.text(t, margin + 3.5, y + 4.2)
+    doc.setTextColor(...C.ink)
+    doc.text(t, MARGIN_MM + 5, y + 4.3)
     y += 11
     doc.setFont('helvetica', 'normal')
   }
 
   const fieldBlock = (label: string, value: string) => {
-    const labelH = 4.5
-    const valueLines = doc.splitTextToSize(value, contentW - 2) as string[]
-    const valueH = valueLines.length * 4.8 + 3
-    ensure(labelH + valueH)
+    const safeLabel = sanitizePdfText(label)
+    const safeValue = sanitizePdfText(value)
+    const labelH = 4.2
+    const valueLines = doc.splitTextToSize(safeValue, innerW - 14) as string[]
+    const valueH = Math.max(valueLines.length * BODY_LINE_PT + 5, 8)
+    const blockH = labelH + valueH + 4
+
+    ensureSpace(blockH)
+
+    doc.setFillColor(...C.valueBand)
+    doc.roundedRect(MARGIN_MM, y - 0.5, innerW, blockH - 1, 1.2, 1.2, 'F')
+    doc.setDrawColor(...C.hairline)
+    doc.setLineWidth(0.08)
+    doc.roundedRect(MARGIN_MM, y - 0.5, innerW, blockH - 1, 1.2, 1.2, 'S')
 
     doc.setFont('helvetica', 'bold')
-    doc.setFontSize(8)
+    doc.setFontSize(LABEL_SIZE)
     doc.setTextColor(...C.muted)
-    doc.text(label.toUpperCase(), margin + 1, y + 3)
-    y += labelH
+    doc.text(safeLabel.toUpperCase(), MARGIN_MM + 4, y + 3.2)
+    y += labelH + 2
 
     doc.setFont('helvetica', 'normal')
-    doc.setFontSize(9.5)
-    doc.setTextColor(...C.text)
+    doc.setFontSize(VALUE_SIZE)
+    doc.setTextColor(...C.ink)
     for (const line of valueLines) {
-      ensure(5)
-      doc.text(line, margin + 2, y + 4)
-      y += 4.8
+      ensureSpace(BODY_LINE_PT + 1)
+      doc.text(line, MARGIN_MM + 5, y + 3.6)
+      y += BODY_LINE_PT
     }
-    y += 3
+    y += 6
   }
 
-  drawCover()
-
   if (sections.length === 0) {
-    const msg =
-      'Aún no hay campos rellenados en esta ficha. Completa datos en el CRM para generar contenido.'
-    ensure(20)
+    ensureSpace(24)
     doc.setFontSize(10)
     doc.setTextColor(...C.muted)
-    const lines = doc.splitTextToSize(msg, contentW) as string[]
+    const msg = sanitizePdfText(
+      'Aún no hay datos consolidados en esta ficha. Completa campos en el CRM y vuelve a exportar.',
+    )
+    const lines = doc.splitTextToSize(msg, innerW) as string[]
     for (const line of lines) {
-      ensure(5)
-      doc.text(line, margin, y)
-      y += 5
+      ensureSpace(5.5)
+      doc.text(line, MARGIN_MM, y)
+      y += 5.5
     }
   }
 
@@ -377,20 +473,23 @@ export function downloadLeadInvestigationPdf(
     for (const bl of sections[i].blocks) {
       fieldBlock(bl.label, bl.value)
     }
-    y += 2
+    y += 1
   }
 
   const total = doc.getNumberOfPages()
   for (let p = 1; p <= total; p++) {
     doc.setPage(p)
+    doc.setDrawColor(...C.hairline)
+    doc.setLineWidth(0.1)
+    doc.line(MARGIN_MM, pageH - FOOTER_MM + 3, pageW - MARGIN_MM, pageH - FOOTER_MM + 3)
     doc.setFont('helvetica', 'normal')
-    doc.setFontSize(7.5)
+    doc.setFontSize(7.25)
     doc.setTextColor(...C.muted)
-    doc.text(`Página ${p} de ${total}`, pageW / 2, pageH - 9, {
+    doc.text(sanitizePdfText(`Vive CRM · ${p} / ${total}`), pageW / 2, pageH - 6, {
       align: 'center',
     })
   }
 
   const year = new Date().getFullYear()
-  doc.save(`Ficha_${fileSlugFromLead(lead)}_${year}.pdf`)
+  doc.save(sanitizePdfText(`Ficha_${fileSlugFromLead(lead)}_${year}.pdf`))
 }

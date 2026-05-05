@@ -29,8 +29,8 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
+import { ProposalHeroGallery } from '@/components/leads/ProposalHeroGallery'
 import { downloadLeadInvestigationPdf } from '@/lib/generateLeadInvestigationPdf'
-import { proposalImagePublicUrl } from '@/lib/proposalImageStorage'
 import {
   getLeadById,
   getLeadCompetitors,
@@ -188,6 +188,12 @@ export function LeadDetail({ leadId }: LeadDetailProps) {
 
   return (
     <div className="min-h-screen px-4 py-8 sm:px-8">
+      {lead.proposal_image_paths.length > 0 ? (
+        <div className="mx-auto mb-10 max-w-4xl sm:mb-14">
+          <ProposalHeroGallery paths={lead.proposal_image_paths} />
+        </div>
+      ) : null}
+
       <Button
         type="button"
         variant="outline"
@@ -200,8 +206,6 @@ export function LeadDetail({ leadId }: LeadDetailProps) {
       </Button>
 
       <div className="mx-auto max-w-4xl space-y-8">
-        <ProposalImagesStrip paths={lead.proposal_image_paths} />
-
         <header className="space-y-4">
           <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-amber-300/85">
             Ficha de prospecto
@@ -620,42 +624,6 @@ export function LeadDetail({ leadId }: LeadDetailProps) {
         </Tabs>
       </div>
     </div>
-  )
-}
-
-function ProposalImagesStrip({ paths }: { paths: string[] }) {
-  if (!paths.length) return null
-  return (
-    <section
-      aria-label="Imágenes enviadas con la propuesta"
-      className="overflow-hidden rounded-2xl border border-amber-500/20 bg-stone-950/35 p-4 shadow-lg shadow-black/25 ring-1 ring-amber-500/10 backdrop-blur-md supports-[backdrop-filter]:bg-card/35"
-    >
-      <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.22em] text-amber-300/90">
-        Imágenes enviadas con la propuesta
-      </p>
-      <div className="flex max-h-[min(52vh,420px)] gap-4 overflow-x-auto overflow-y-hidden pb-1">
-        {paths.map((storagePath) => {
-          const src = proposalImagePublicUrl(storagePath)
-          return (
-            <a
-              key={storagePath}
-              href={src}
-              target="_blank"
-              rel="noreferrer"
-              className="shrink-0 overflow-hidden rounded-xl border border-amber-500/15 bg-black/40 ring-1 ring-amber-400/15"
-              title="Abrir imagen completa"
-            >
-              <img
-                src={src}
-                alt=""
-                loading="lazy"
-                className="max-h-[min(52vh,380px)] w-auto max-w-[min(92vw,480px)] object-contain object-top"
-              />
-            </a>
-          )
-        })}
-      </div>
-    </section>
   )
 }
 
