@@ -2,7 +2,7 @@ import { proposalImagePublicUrl } from '@/lib/proposalImageStorage'
 import { cn } from '@/lib/utils'
 
 /**
- * Bloque visual al inicio de la ficha (sin numeración de expediente): material enviado con la propuesta.
+ * Galería debajo de las pestañas de la ficha (sin numeración de expediente): material de la propuesta.
  */
 export function ProposalHeroGallery({
   paths,
@@ -36,8 +36,8 @@ export function ProposalHeroGallery({
               Piezas junto a la propuesta
             </h2>
             <p className="max-w-xl text-[13px] leading-relaxed text-stone-500">
-              Vista previa de lo adjuntado en el envío para reconocimiento rápido, sin ocupar más
-              espacio por debajo del encabezado.
+              Vista previa de lo que enviaste con la propuesta. Se muestra aquí, justo debajo de las
+              pestañas, para localizarlo al instante.
             </p>
           </div>
           <p className="shrink-0 text-[11px] font-medium tabular-nums tracking-wide text-amber-200/55">

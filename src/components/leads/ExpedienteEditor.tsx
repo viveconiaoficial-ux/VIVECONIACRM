@@ -207,9 +207,9 @@ export function ExpedienteEditor({ lead, onSaved }: ExpedienteEditorProps) {
           </CardTitle>
           <CardDescription className="max-w-2xl text-stone-500">
             Texto en seis bloques numerados; las{' '}
-            <strong className="font-medium text-stone-400">imágenes de la propuesta</strong> van
-            aparte (se guardan al subir). Si rellenas el mensaje largo (4), el primer botón de WA
-            usa ese texto.
+            <strong className="font-medium text-stone-400">imágenes de la propuesta</strong> se
+            guardan al subirlas y aparecen en la ficha justo debajo de las pestañas. Si rellenas el
+            mensaje largo (4), el primer botón de WA usa ese texto.
           </CardDescription>
         </div>
         <Button

@@ -188,12 +188,6 @@ export function LeadDetail({ leadId }: LeadDetailProps) {
 
   return (
     <div className="min-h-screen px-4 py-8 sm:px-8">
-      {lead.proposal_image_paths.length > 0 ? (
-        <div className="mx-auto mb-10 max-w-4xl sm:mb-14">
-          <ProposalHeroGallery paths={lead.proposal_image_paths} />
-        </div>
-      ) : null}
-
       <Button
         type="button"
         variant="outline"
@@ -296,6 +290,12 @@ export function LeadDetail({ leadId }: LeadDetailProps) {
               Expediente e investigación
             </TabsTrigger>
           </TabsList>
+
+          {lead.proposal_image_paths.length > 0 ? (
+            <div className="mt-5 mb-1 max-w-none">
+              <ProposalHeroGallery paths={lead.proposal_image_paths} />
+            </div>
+          ) : null}
 
           <TabsContent value="estado" className="mt-6 outline-none">
             <LeadEstadoIntercambioPanel
