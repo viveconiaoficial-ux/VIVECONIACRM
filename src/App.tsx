@@ -1,6 +1,8 @@
 import { AlertTriangle } from 'lucide-react'
-import { Toaster } from '@/components/ui/sonner'
+import { useState } from 'react'
+import { MobileNavBar, MobileNavDrawer } from '@/components/layout/MobileNav'
 import { Sidebar } from '@/components/layout/Sidebar'
+import { Toaster } from '@/components/ui/sonner'
 import { Analiticas } from '@/pages/Analiticas'
 import { ClientesAceptados } from '@/pages/ClientesAceptados'
 import { ClientesPotenciales } from '@/pages/ClientesPotenciales'
@@ -55,6 +57,7 @@ export default function App() {
   const mainView = useAppStore((s) => s.mainView)
   const setMainView = useAppStore((s) => s.setMainView)
   const setSelectedLeadId = useAppStore((s) => s.setSelectedLeadId)
+  const [mobileNavOpen, setMobileNavOpen] = useState(false)
 
   return (
     <>
@@ -63,7 +66,7 @@ export default function App() {
       {selectedLeadId ? (
         <LeadDetail key={selectedLeadId} leadId={selectedLeadId} />
       ) : (
-        <div className="flex min-h-screen text-stone-100">
+        <div className="flex min-h-screen flex-col text-stone-100 md:flex-row">
           <Sidebar
             activeView={mainView}
             onSelectView={(view) => {
@@ -72,6 +75,16 @@ export default function App() {
             }}
           />
           <div className="flex min-w-0 flex-1 flex-col">
+            <MobileNavBar onOpenMenu={() => setMobileNavOpen(true)} />
+            <MobileNavDrawer
+              open={mobileNavOpen}
+              onOpenChange={setMobileNavOpen}
+              activeView={mainView}
+              onSelectView={(view) => {
+                setMainView(view)
+                setSelectedLeadId(null)
+              }}
+            />
             {mainView === 'clientes_potenciales' ? (
               <ClientesPotenciales />
             ) : mainView === 'clientes' ? (
