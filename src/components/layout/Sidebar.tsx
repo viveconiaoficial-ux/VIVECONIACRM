@@ -192,8 +192,9 @@ export function Sidebar({ activeView, onSelectView }: SidebarProps) {
   return (
     <aside
       className={cn(
-        'hidden w-60 md:flex',
         SIDEBAR_SURFACE_CLASS,
+        /* hidden/md:flex deben ir después: el surface incluye `flex` y si no, tailwind-merge anula `hidden`. */
+        'hidden w-60 md:flex',
       )}
     >
       <SidebarContent activeView={activeView} onSelectView={onSelectView} />
