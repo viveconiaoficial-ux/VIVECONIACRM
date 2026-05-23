@@ -9,7 +9,6 @@ import { ClientesPotenciales } from '@/pages/ClientesPotenciales'
 import { Dashboard } from '@/pages/Dashboard'
 import { FichasPipeline } from '@/pages/FichasPipeline'
 import { LeadDetail } from '@/pages/LeadDetail'
-import { PlanInteracciones } from '@/pages/PlanInteracciones'
 import { useLeadsSubscriptions } from '@/hooks/useLeads'
 import { normalizeSupabaseUrl } from '@/lib/supabaseUrl'
 import { useAppStore } from '@/store/useAppStore'
@@ -91,8 +90,6 @@ export default function App() {
               <ClientesAceptados />
             ) : mainView === 'fichas' ? (
               <FichasPipeline />
-            ) : mainView === 'plan_interacciones' ? (
-              <PlanInteracciones />
             ) : mainView === 'analiticas' ? (
               <Analiticas />
             ) : (

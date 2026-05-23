@@ -87,7 +87,7 @@ export function Analiticas() {
             <p className="max-w-2xl text-sm leading-relaxed text-amber-200/55">
               Vista agregada del inventario de prospectos y del embudo. Para
               acciones concretas, usa{' '}
-              <span className="text-amber-100/90">Plan de interacciones</span>.
+              <span className="text-amber-100/90">Fichas y estado</span>.
             </p>
           </div>
           <Button

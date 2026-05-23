@@ -67,13 +67,13 @@ export function FichasPipeline() {
           </Button>
         </header>
 
-        <div className="min-h-0 flex-1 overflow-x-auto pb-2">
-          <div className="flex h-full min-w-max gap-4 pb-2">
+        <div className="min-h-0 flex-1 overflow-y-auto pb-2">
+          <div className="flex flex-col gap-4 pb-2">
             {LEAD_STATUSES.map((status) => (
               <section
                 key={status}
                 className={cn(
-                  'flex w-[min(100vw-3rem,280px)] shrink-0 flex-col rounded-2xl border border-amber-500/12',
+                  'flex w-full flex-col rounded-2xl border border-amber-500/12',
                   'bg-card/45 shadow-xl shadow-black/20 backdrop-blur-md supports-[backdrop-filter]:bg-card/35',
                 )}
               >
@@ -86,7 +86,7 @@ export function FichasPipeline() {
                     {byStatus[status].length === 1 ? '' : 's'}
                   </p>
                 </div>
-                <ul className="flex max-h-[calc(100vh-14rem)] flex-1 flex-col gap-2 overflow-y-auto p-3 sm:max-h-[calc(100vh-12rem)]">
+                <ul className="flex flex-col gap-2 p-3">
                   {byStatus[status].length === 0 ? (
                     <li className="rounded-xl border border-dashed border-amber-500/10 bg-stone-950/20 px-3 py-8 text-center text-xs text-stone-500">
                       Vacío

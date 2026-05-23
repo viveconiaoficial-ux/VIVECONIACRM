@@ -4,7 +4,6 @@ import {
   Handshake,
   LayoutDashboard,
   Sparkles,
-  Telescope,
   UserSearch,
 } from 'lucide-react'
 import type { ReactNode } from 'react'
@@ -132,26 +131,6 @@ export function SidebarContent({
             )}
           />
           Fichas y estado
-        </button>
-        <button
-          type="button"
-          onClick={() => select('plan_interacciones')}
-          className={cn(
-            'group flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium transition-all',
-            activeView === 'plan_interacciones'
-              ? 'bg-amber-500/12 text-amber-50 shadow-sm ring-1 ring-amber-400/20'
-              : 'text-stone-400 hover:bg-stone-900/50 hover:text-stone-200',
-          )}
-        >
-          <Telescope
-            className={cn(
-              'size-[18px] shrink-0 transition-transform group-hover:scale-105',
-              activeView === 'plan_interacciones'
-                ? 'text-amber-300/90'
-                : 'text-stone-500',
-            )}
-          />
-          Plan de interacciones
         </button>
         <button
           type="button"

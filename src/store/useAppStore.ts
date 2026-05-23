@@ -12,7 +12,6 @@ export type MainView =
   | 'clientes'
   | 'prospectos'
   | 'fichas'
-  | 'plan_interacciones'
   | 'analiticas'
 
 interface AppStore {
