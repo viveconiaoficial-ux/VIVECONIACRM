@@ -1,15 +1,12 @@
 export type LeadStatus =
-  | 'lead_frio'
-  | 'primer_acercamiento'
+  | 'sin_contactar'
   | 'propuesta_enviada'
-  | 'esperando_respuesta'
-  | 'ignorada'
-  | 'contestada_seguimiento'
-  | 'negociacion'
+  | 'contestada_negociacion'
   | 'propuesta_aceptada'
-  | 'venta_cerrada'
-  | 'rechazado'
-  | 'descartada_interna'
+  /** Rechazo explícito (visible solo en Histórico) */
+  | 'contestada_rechazada'
+  /** Sin respuesta / descarte tipo “fantasma” (visible solo en Histórico) */
+  | 'ignorada_rechazada'
 
 export type SocialQuality = 'buena' | 'regular' | 'inexistente'
 

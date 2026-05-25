@@ -12,6 +12,7 @@ export type MainView =
   | 'clientes'
   | 'prospectos'
   | 'fichas'
+  | 'historico_rechazos'
   | 'analiticas'
 
 interface AppStore {

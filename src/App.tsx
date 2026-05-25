@@ -8,6 +8,7 @@ import { ClientesAceptados } from '@/pages/ClientesAceptados'
 import { ClientesPotenciales } from '@/pages/ClientesPotenciales'
 import { Dashboard } from '@/pages/Dashboard'
 import { FichasPipeline } from '@/pages/FichasPipeline'
+import { HistoricoRechazos } from '@/pages/HistoricoRechazos'
 import { LeadDetail } from '@/pages/LeadDetail'
 import { useLeadsSubscriptions } from '@/hooks/useLeads'
 import { normalizeSupabaseUrl } from '@/lib/supabaseUrl'
@@ -90,6 +91,8 @@ export default function App() {
               <ClientesAceptados />
             ) : mainView === 'fichas' ? (
               <FichasPipeline />
+            ) : mainView === 'historico_rechazos' ? (
+              <HistoricoRechazos />
             ) : mainView === 'analiticas' ? (
               <Analiticas />
             ) : (

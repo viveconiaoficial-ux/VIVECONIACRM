@@ -2,6 +2,7 @@ import {
   BarChart3,
   ClipboardList,
   Handshake,
+  History,
   LayoutDashboard,
   Sparkles,
   UserSearch,
@@ -134,6 +135,26 @@ export function SidebarContent({
         </button>
         <button
           type="button"
+          onClick={() => select('historico_rechazos')}
+          className={cn(
+            'group flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium transition-all',
+            activeView === 'historico_rechazos'
+              ? 'bg-amber-500/12 text-amber-50 shadow-sm ring-1 ring-amber-400/20'
+              : 'text-stone-400 hover:bg-stone-900/50 hover:text-stone-200',
+          )}
+        >
+          <History
+            className={cn(
+              'size-[18px] shrink-0 transition-transform group-hover:scale-105',
+              activeView === 'historico_rechazos'
+                ? 'text-amber-300/90'
+                : 'text-stone-500',
+            )}
+          />
+          Histórico rechazos
+        </button>
+        <button
+          type="button"
           onClick={() => select('analiticas')}
           className={cn(
             'group flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium transition-all',
@@ -155,7 +176,8 @@ export function SidebarContent({
         <p className="text-[11px] leading-snug text-stone-500">
           <span className="text-amber-200/70">Potenciales</span> y{' '}
           <span className="text-amber-200/70">Clientes</span> separan quién aún
-          no ha aceptado y quién ya sí.
+          no ha aceptado y quién ya sí. Los rechazos quedan en{' '}
+          <span className="text-amber-200/70">Histórico</span>.
         </p>
       </div>
     </>

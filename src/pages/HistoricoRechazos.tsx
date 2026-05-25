@@ -1,22 +1,22 @@
 import { Search } from 'lucide-react'
 import { useMemo, useState } from 'react'
-import { ClientesAceptadosTable } from '@/components/leads/ClientesAceptadosTable'
+import { LeadsTable } from '@/components/leads/LeadsTable'
 import { NewLeadDialog } from '@/components/leads/NewLeadDialog'
 import { TopBar } from '@/components/layout/TopBar'
 import { Input } from '@/components/ui/input'
 import { useLeads } from '@/hooks/useLeads'
-import { isClienteAceptadoVisible } from '@/lib/leadLifecycle'
+import { isLeadHistoricoRechazo } from '@/lib/leadLifecycle'
 import { useAppStore } from '@/store/useAppStore'
 import { cn } from '@/lib/utils'
 
-export function ClientesAceptados() {
+export function HistoricoRechazos() {
   const { allLeads, refetch } = useLeads()
   const setSelectedLeadId = useAppStore((s) => s.setSelectedLeadId)
   const [newLeadOpen, setNewLeadOpen] = useState(false)
   const [search, setSearch] = useState('')
 
-  const clientes = useMemo(() => {
-    const list = allLeads.filter(isClienteAceptadoVisible)
+  const historico = useMemo(() => {
+    const list = allLeads.filter(isLeadHistoricoRechazo)
     if (!search.trim()) return list
     const q = search.toLowerCase()
     return list.filter(
@@ -31,28 +31,28 @@ export function ClientesAceptados() {
   return (
     <div className="flex min-w-0 flex-1 flex-col text-stone-100">
       <TopBar
-        visibleCount={clientes.length}
+        visibleCount={historico.length}
         onNewLead={() => setNewLeadOpen(true)}
-        titleHighlight="clientes"
+        titleHighlight="rechazos archivados"
         countLine={(n) =>
           n === 0
-            ? 'Marca fecha de aceptación en la ficha o estado “Propuesta aceptada”.'
-            : `Tienes ${n} ${n === 1 ? 'cliente activo' : 'clientes activos'} en esta vista.`
+            ? 'No hay fichas en rechazo. Los estados “Contestada · rechazada” e “Ignorada · rechazada” aparecen aquí.'
+            : `${n} ${n === 1 ? 'ficha archivada' : 'fichas archivadas'} (no cuentan en el panel activo).`
         }
       />
       <NewLeadDialog open={newLeadOpen} onOpenChange={setNewLeadOpen} />
       <main className="flex flex-1 flex-col gap-6 p-6 sm:p-8">
         <header className="space-y-2 px-0.5">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-emerald-300/70">
-            Relación activa
+          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-zinc-400">
+            Consulta
           </p>
           <h1 className="text-2xl font-semibold tracking-tight text-stone-50 sm:text-3xl">
-            Clientes
+            Histórico de rechazos
           </h1>
           <p className="max-w-2xl text-sm leading-relaxed text-amber-200/55">
-            Quienes ya <strong className="text-emerald-200/90">aceptaron</strong>{' '}
-            (fecha de aceptación rellena o estado “Propuesta aceptada”). Mantén aquí
-            presupuesto y seguimientos operativos.
+            Oportunidades cerradas como rechazadas o sin respuesta. Siguen en Supabase;
+            puedes abrir la ficha y, si hace falta, cambiar el estado para devolverlas al
+            panel principal.
           </p>
         </header>
 
@@ -60,7 +60,7 @@ export function ClientesAceptados() {
           <div className="relative w-full max-w-md">
             <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-amber-200/35" />
             <Input
-              placeholder="Buscar cliente…"
+              placeholder="Buscar en histórico…"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="h-10 rounded-xl border-amber-500/15 bg-stone-950/40 pl-10 text-stone-100 placeholder:text-stone-600"
@@ -77,11 +77,7 @@ export function ClientesAceptados() {
           </button>
         </div>
 
-        <ClientesAceptadosTable
-          leads={clientes}
-          onOpenLead={setSelectedLeadId}
-          onAfterLeadAction={() => void refetch()}
-        />
+        <LeadsTable leads={historico} onOpenLead={setSelectedLeadId} />
       </main>
     </div>
   )

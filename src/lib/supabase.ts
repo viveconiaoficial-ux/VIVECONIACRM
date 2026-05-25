@@ -4,6 +4,7 @@
  */
 import { createClient } from '@supabase/supabase-js'
 import { LEAD_STATUSES } from '@/constants'
+import { LEGACY_LEAD_STATUS_TO_CURRENT } from '@/lib/leadLifecycle'
 import { normalizeSupabaseUrl } from '@/lib/supabaseUrl'
 import type {
   LeadCompetitor,
@@ -26,15 +27,14 @@ const supabaseUrl = normalizeSupabaseUrl(supabaseUrlRaw)
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
-const LEGACY_STATUS_MAP: Record<string, LeadStatus> = {
-  seguimiento: 'contestada_seguimiento',
-}
-
 export function normalizeLeadRow(row: Lead): Lead {
   const raw = row.status as string
-  let status = LEGACY_STATUS_MAP[raw] ?? raw
-  if (!LEAD_STATUSES.includes(status as LeadStatus)) {
-    status = 'lead_frio'
+  let status =
+    LEGACY_LEAD_STATUS_TO_CURRENT[raw] ??
+    LEGACY_LEAD_STATUS_TO_CURRENT[raw.toLowerCase()] ??
+    raw
+  if (!(LEAD_STATUSES as readonly string[]).includes(status)) {
+    status = 'sin_contactar'
   }
   const pathsRaw = (row as { proposal_image_paths?: unknown }).proposal_image_paths
   const proposal_image_paths = Array.isArray(pathsRaw)

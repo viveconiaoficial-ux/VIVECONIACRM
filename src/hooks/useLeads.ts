@@ -1,6 +1,7 @@
 import { useEffect, useCallback } from 'react'
 import { toast } from 'sonner'
 import { normalizeLeadRow, supabase, getLeads } from '@/lib/supabase'
+import { isVisibleInMainPanels } from '@/lib/leadLifecycle'
 import { useAppStore } from '@/store/useAppStore'
 import type { Lead } from '@/types/lead'
 
@@ -76,6 +77,7 @@ export function useLeads() {
   }, [])
 
   const filteredLeads = leads.filter((lead) => {
+    if (!isVisibleInMainPanels(lead)) return false
     if (
       filters.hasWebsite !== null &&
       lead.has_website !== filters.hasWebsite

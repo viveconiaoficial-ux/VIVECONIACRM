@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/select'
 import { LeadsTable } from '@/components/leads/LeadsTable'
 import { NewLeadDialog } from '@/components/leads/NewLeadDialog'
-import { LEAD_STATUSES, STATUS_LABELS } from '@/constants'
+import { LEAD_PIPELINE_STATUSES, STATUS_LABELS } from '@/constants'
 import { useLeads } from '@/hooks/useLeads'
 import { useAppStore } from '@/store/useAppStore'
 import type { LeadStatus } from '@/types/lead'
@@ -114,7 +114,7 @@ export function Dashboard() {
                   </SelectTrigger>
                   <SelectContent className="border-amber-500/15 bg-popover text-popover-foreground">
                     <SelectItem value="__all__">Todos los estados</SelectItem>
-                    {LEAD_STATUSES.map((st) => (
+                    {LEAD_PIPELINE_STATUSES.map((st) => (
                       <SelectItem key={st} value={st}>
                         {STATUS_LABELS[st]}
                       </SelectItem>

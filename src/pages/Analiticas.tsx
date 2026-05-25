@@ -20,6 +20,7 @@ import {
 } from '@/components/ui/card'
 import { LEAD_STATUSES, STATUS_LABELS } from '@/constants'
 import { useLeads } from '@/hooks/useLeads'
+import { isVisibleInMainPanels } from '@/lib/leadLifecycle'
 import type { LeadStatus } from '@/types/lead'
 import { cn } from '@/lib/utils'
 
@@ -28,7 +29,7 @@ export function Analiticas() {
   const [newLeadOpen, setNewLeadOpen] = useState(false)
 
   const stats = useMemo(() => {
-    const leads = allLeads
+    const leads = allLeads.filter(isVisibleInMainPanels)
     const n = leads.length
     const conWeb = leads.filter((l) => l.has_website).length
     const scores = leads.map((l) => l.score).filter((s): s is number => s != null)
@@ -49,7 +50,7 @@ export function Analiticas() {
     const conVideo = leads.filter((l) => l.video_url).length
 
     const enPipeline = leads.filter((l) =>
-      ['negociacion', 'propuesta_aceptada', 'propuesta_enviada'].includes(
+      ['contestada_negociacion', 'propuesta_aceptada', 'propuesta_enviada'].includes(
         l.status,
       ),
     ).length
@@ -71,7 +72,7 @@ export function Analiticas() {
   return (
     <div className="flex min-w-0 flex-1 flex-col text-stone-100">
       <TopBar
-        visibleCount={allLeads.length}
+        visibleCount={stats.n}
         onNewLead={() => setNewLeadOpen(true)}
       />
       <NewLeadDialog open={newLeadOpen} onOpenChange={setNewLeadOpen} />
@@ -85,8 +86,9 @@ export function Analiticas() {
               Analíticas
             </h1>
             <p className="max-w-2xl text-sm leading-relaxed text-amber-200/55">
-              Vista agregada del inventario de prospectos y del embudo. Para
-              acciones concretas, usa{' '}
+              Vista del embudo{' '}
+              <span className="text-amber-100/85">sin rechazos archivados</span>{' '}
+              (esos están en Histórico). Para acciones concretas, usa{' '}
               <span className="text-amber-100/90">Fichas y estado</span>.
             </p>
           </div>

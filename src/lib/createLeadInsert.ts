@@ -34,7 +34,7 @@ export function createLeadInsert(data: {
     whatsapp_phone: t(data.whatsapp_phone),
     has_website: data.has_website ?? false,
     sector: t(data.sector),
-    status: 'lead_frio',
+    status: 'sin_contactar',
     location_label: t(data.location_label),
     instagram_handle: ig,
     google_maps_url: t(data.google_maps_url),

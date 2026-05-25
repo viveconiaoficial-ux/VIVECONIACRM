@@ -1,5 +1,5 @@
 import { Loader2, Save } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { SectorSelectWithOther } from '@/components/leads/SectorSelectWithOther'
 import { Button } from '@/components/ui/button'
 import {
@@ -89,6 +89,10 @@ export function LeadEstadoIntercambioPanel({
   )
   const [saving, setSaving] = useState(false)
 
+  useEffect(() => {
+    setStatus(lead.status)
+  }, [lead.id, lead.status])
+
   async function handleSave() {
     setSaving(true)
     try {
@@ -124,7 +128,7 @@ export function LeadEstadoIntercambioPanel({
     } catch (e) {
       console.error(e)
       toast.error(
-        'No se pudo guardar. Ejecuta la migración 004 en Supabase si faltan columnas.',
+        'No se pudo guardar. Ejecuta las migraciones 004 y 009 en Supabase si faltan columnas o valores de estado.',
       )
     } finally {
       setSaving(false)
@@ -160,7 +164,7 @@ export function LeadEstadoIntercambioPanel({
           </CardTitle>
           <CardDescription className="max-w-2xl text-stone-500">
             Fase actual, propuesta, presupuesto y fechas clave. Se guarda en la tabla{' '}
-            <span className="text-stone-400">leads</span> (migración 004).
+            <span className="text-stone-400">leads</span> (embudo y estados · migraciones 004 y 009).
           </CardDescription>
         </div>
         <Button

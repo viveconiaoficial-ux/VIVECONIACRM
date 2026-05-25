@@ -4,21 +4,22 @@ import { LeadStatusBadge } from '@/components/leads/LeadStatusBadge'
 import { NewLeadDialog } from '@/components/leads/NewLeadDialog'
 import { TopBar } from '@/components/layout/TopBar'
 import { Button } from '@/components/ui/button'
-import { LEAD_STATUSES, STATUS_LABELS } from '@/constants'
+import { LEAD_PIPELINE_STATUSES, STATUS_LABELS } from '@/constants'
 import { useLeads } from '@/hooks/useLeads'
+import { isVisibleInMainPanels } from '@/lib/leadLifecycle'
 import { useAppStore } from '@/store/useAppStore'
 import type { Lead, LeadStatus } from '@/types/lead'
 import { cn } from '@/lib/utils'
 
 function groupByStatus(leads: Lead[]): Record<LeadStatus, Lead[]> {
   const initial = {} as Record<LeadStatus, Lead[]>
-  for (const s of LEAD_STATUSES) initial[s] = []
+  for (const s of LEAD_PIPELINE_STATUSES) initial[s] = []
   for (const lead of leads) {
     const bucket = initial[lead.status]
     if (bucket) bucket.push(lead)
-    else initial.lead_frio.push(lead)
+    else initial.sin_contactar.push(lead)
   }
-  for (const s of LEAD_STATUSES) {
+  for (const s of LEAD_PIPELINE_STATUSES) {
     initial[s].sort(
       (a, b) =>
         new Date(b.updated_at ?? b.created_at).getTime() -
@@ -33,12 +34,16 @@ export function FichasPipeline() {
   const setSelectedLeadId = useAppStore((s) => s.setSelectedLeadId)
   const [newLeadOpen, setNewLeadOpen] = useState(false)
 
-  const byStatus = useMemo(() => groupByStatus(allLeads), [allLeads])
+  const visibleOnly = useMemo(
+    () => allLeads.filter(isVisibleInMainPanels),
+    [allLeads],
+  )
+  const byStatus = useMemo(() => groupByStatus(visibleOnly), [visibleOnly])
 
   return (
     <div className="flex min-w-0 flex-1 flex-col text-stone-100">
       <TopBar
-        visibleCount={allLeads.length}
+        visibleCount={visibleOnly.length}
         onNewLead={() => setNewLeadOpen(true)}
       />
       <NewLeadDialog open={newLeadOpen} onOpenChange={setNewLeadOpen} />
@@ -69,7 +74,7 @@ export function FichasPipeline() {
 
         <div className="min-h-0 flex-1 overflow-y-auto pb-2">
           <div className="flex flex-col gap-4 pb-2">
-            {LEAD_STATUSES.map((status) => (
+            {LEAD_PIPELINE_STATUSES.map((status) => (
               <section
                 key={status}
                 className={cn(
