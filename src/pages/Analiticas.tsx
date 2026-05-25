@@ -8,6 +8,7 @@ import {
   Video,
 } from 'lucide-react'
 import { useMemo, useState } from 'react'
+import { FracasosReflexionSection } from '@/components/analytics/FracasosReflexionSection'
 import { TopBar } from '@/components/layout/TopBar'
 import { NewLeadDialog } from '@/components/leads/NewLeadDialog'
 import { Button } from '@/components/ui/button'
@@ -20,7 +21,7 @@ import {
 } from '@/components/ui/card'
 import { LEAD_STATUSES, STATUS_LABELS } from '@/constants'
 import { useLeads } from '@/hooks/useLeads'
-import { isVisibleInMainPanels } from '@/lib/leadLifecycle'
+import { isLeadHistoricoRechazo, isVisibleInMainPanels } from '@/lib/leadLifecycle'
 import type { LeadStatus } from '@/types/lead'
 import { cn } from '@/lib/utils'
 
@@ -29,8 +30,10 @@ export function Analiticas() {
   const [newLeadOpen, setNewLeadOpen] = useState(false)
 
   const stats = useMemo(() => {
-    const leads = allLeads.filter(isVisibleInMainPanels)
+    const leads = allLeads
     const n = leads.length
+    const nActive = leads.filter(isVisibleInMainPanels).length
+    const nRejected = leads.filter(isLeadHistoricoRechazo).length
     const conWeb = leads.filter((l) => l.has_website).length
     const scores = leads.map((l) => l.score).filter((s): s is number => s != null)
     const avgScore =
@@ -49,7 +52,8 @@ export function Analiticas() {
     const wa2 = leads.filter((l) => l.wa_msg2_sent_at).length
     const conVideo = leads.filter((l) => l.video_url).length
 
-    const enPipeline = leads.filter((l) =>
+    const activeOnly = leads.filter(isVisibleInMainPanels)
+    const enPipeline = activeOnly.filter((l) =>
       ['contestada_negociacion', 'propuesta_aceptada', 'propuesta_enviada'].includes(
         l.status,
       ),
@@ -57,6 +61,8 @@ export function Analiticas() {
 
     return {
       n,
+      nActive,
+      nRejected,
       conWeb,
       sinWeb: n - conWeb,
       avgScore,
@@ -68,6 +74,11 @@ export function Analiticas() {
       enPipeline,
     }
   }, [allLeads])
+
+  const rechazadas = useMemo(
+    () => allLeads.filter(isLeadHistoricoRechazo),
+    [allLeads],
+  )
 
   return (
     <div className="flex min-w-0 flex-1 flex-col text-stone-100">
@@ -86,10 +97,11 @@ export function Analiticas() {
               Analíticas
             </h1>
             <p className="max-w-2xl text-sm leading-relaxed text-amber-200/55">
-              Vista del embudo{' '}
-              <span className="text-amber-100/85">sin rechazos archivados</span>{' '}
-              (esos están en Histórico). Para acciones concretas, usa{' '}
-              <span className="text-amber-100/90">Fichas y estado</span>.
+              Incluye las fichas del embudo activo y las{' '}
+              <span className="text-amber-100/85">rechazadas archivadas</span>, para ver el
+              embudo completo y aprender de los cierres negativos. Para acciones diarias, usa{' '}
+              <span className="text-amber-100/90">Fichas y estado</span> o{' '}
+              <span className="text-amber-100/90">Histórico rechazos</span>.
             </p>
           </div>
           <Button
@@ -104,11 +116,21 @@ export function Analiticas() {
           </Button>
         </header>
 
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
           <StatTile
             label="Total fichas"
             value={String(stats.n)}
             icon={Building2}
+          />
+          <StatTile
+            label="Embudo activo"
+            value={String(stats.nActive)}
+            icon={Building2}
+          />
+          <StatTile
+            label="Rechazadas"
+            value={String(stats.nRejected)}
+            icon={BarChart3}
           />
           <StatTile
             label="Media score"
@@ -121,7 +143,7 @@ export function Analiticas() {
             icon={Globe}
           />
           <StatTile
-            label="En propuesta / negocio"
+            label="Act. en propuesta / negocio"
             value={String(stats.enPipeline)}
             icon={BarChart3}
           />
@@ -135,7 +157,7 @@ export function Analiticas() {
                 Distribución por estado
               </CardTitle>
               <CardDescription>
-                Recuento según la columna de pipeline actual.
+                Todos los estados (incluidas contestada/ignorada · rechazada).
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-2.5">
@@ -168,7 +190,7 @@ export function Analiticas() {
                 Actividad registrada
               </CardTitle>
               <CardDescription>
-                Basado en campos guardados en cada ficha (WhatsApp y vídeo).
+                WhatsApp y vídeo en todo el inventario (activo + rechazado).
               </CardDescription>
             </CardHeader>
             <CardContent className="grid gap-4 sm:grid-cols-3">
@@ -193,6 +215,8 @@ export function Analiticas() {
             </CardContent>
           </Card>
         </div>
+
+        <FracasosReflexionSection leads={rechazadas} />
       </main>
     </div>
   )

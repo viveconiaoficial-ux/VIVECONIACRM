@@ -105,7 +105,7 @@ export function NewLeadDialog({ open, onOpenChange }: NewLeadDialogProps) {
     } catch (e) {
       console.error(e)
       toast.error(
-        'Error al crear. ¿Migraciones expediente (003, 007) y estados del embudo (009) en Supabase?',
+        'Error al crear. ¿Migraciones en Supabase aplicadas (embudo y columna failure_ai_reflection)?',
       )
     } finally {
       setSaving(false)

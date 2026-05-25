@@ -56,6 +56,8 @@ export interface Lead {
   deal_accepted_at: string | null
   deal_closed_at: string | null
   deal_rejection_reason: string | null
+  /** Reflexión sobre el fracaso (IA / n8n / borrador en Analíticas). Migración 20260125120006. */
+  failure_ai_reflection: string | null
 
   // —— Investigación / tarjeta enriquecida (migración 002)
   priority: LeadPriority | null

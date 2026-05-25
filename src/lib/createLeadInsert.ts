@@ -65,6 +65,7 @@ export function createLeadInsert(data: {
     deal_accepted_at: null,
     deal_closed_at: null,
     deal_rejection_reason: null,
+    failure_ai_reflection: null,
     priority: null,
     score: null,
     neighborhood: null,

@@ -1,10 +1,3 @@
--- Embudo simplificado: nuevos valores y migración de filas (+ vistas potenciales/clientes).
-
-alter type lead_status add value if not exists 'sin_contactar';
-alter type lead_status add value if not exists 'contestada_negociacion';
-alter type lead_status add value if not exists 'contestada_rechazada';
-alter type lead_status add value if not exists 'ignorada_rechazada';
-
 update public.leads
 set status = 'contestada_negociacion'::lead_status
 where status = 'seguimiento'::lead_status;

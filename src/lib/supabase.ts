@@ -40,7 +40,19 @@ export function normalizeLeadRow(row: Lead): Lead {
   const proposal_image_paths = Array.isArray(pathsRaw)
     ? (pathsRaw as string[]).filter((p) => typeof p === 'string' && p.length > 0)
     : []
-  return { ...row, status: status as LeadStatus, proposal_image_paths }
+  const failureRaw = (row as { failure_ai_reflection?: string | null })
+    .failure_ai_reflection
+  const failure_ai_reflection =
+    typeof failureRaw === 'string' && failureRaw.trim() !== ''
+      ? failureRaw.trim()
+      : null
+
+  return {
+    ...row,
+    status: status as LeadStatus,
+    proposal_image_paths,
+    failure_ai_reflection,
+  }
 }
 
 export async function getLeads(): Promise<Lead[]> {

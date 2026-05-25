@@ -128,7 +128,7 @@ export function LeadEstadoIntercambioPanel({
     } catch (e) {
       console.error(e)
       toast.error(
-        'No se pudo guardar. Ejecuta las migraciones 004 y 009 en Supabase si faltan columnas o valores de estado.',
+        'No se pudo guardar. Ejecuta migraciones 004 en Supabase si faltan columnas, y el bloque embudo/reflexión (`20260125120001`…`20006`) si el estado o `failure_ai_reflection` fallan.',
       )
     } finally {
       setSaving(false)
@@ -164,7 +164,7 @@ export function LeadEstadoIntercambioPanel({
           </CardTitle>
           <CardDescription className="max-w-2xl text-stone-500">
             Fase actual, propuesta, presupuesto y fechas clave. Se guarda en la tabla{' '}
-            <span className="text-stone-400">leads</span> (embudo y estados · migraciones 004 y 009).
+            <span className="text-stone-400">leads</span> (embudo y reflexión fracasos · migr. 004 y 20260125120001–20006).
           </CardDescription>
         </div>
         <Button

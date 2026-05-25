@@ -31,7 +31,7 @@ export function isClienteAceptadoVisible(lead: Lead): boolean {
   return isClienteAceptado(lead) && isVisibleInMainPanels(lead)
 }
 
-/** Mapa sólo desarrollo/APIs antiguas; Supabase debe tener migración 009 aplicada. */
+/** Mapa sólo desarrollo/APIs antiguas; el remoto debe tener migraciones 20260125120001–20005. */
 export const LEGACY_LEAD_STATUS_TO_CURRENT: Partial<
   Record<string, LeadStatus>
 > = {
