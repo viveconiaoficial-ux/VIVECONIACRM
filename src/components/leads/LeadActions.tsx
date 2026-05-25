@@ -1,11 +1,8 @@
 import { ExternalLink, Mail, MessageCircle, Video } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
-import {
-  buildWhatsAppUrl,
-  WA_MSG1_TEMPLATE,
-  WA_MSG2_TEMPLATE,
-} from '@/constants'
+import { buildWhatsAppUrl, WA_MSG2_TEMPLATE } from '@/constants'
+import { getLeadPrimaryWhatsAppMessage } from '@/lib/leadWhatsAppMessage'
 import { logLeadInteraction, updateLead } from '@/lib/supabase'
 import { useAppStore } from '@/store/useAppStore'
 import type { Lead } from '@/types/lead'
@@ -41,21 +38,14 @@ export function LeadActions({ lead, onAfterLogged }: Props) {
       toast.error('Sin número de WhatsApp')
       return
     }
-    const msg =
-      lead.expediente_outreach_message?.trim() ||
-      WA_MSG1_TEMPLATE.replace(
-        '{{nombre}}',
-        lead.contact_name ?? lead.business_name,
-      ).replace('{{negocio}}', lead.business_name)
+    const msg = getLeadPrimaryWhatsAppMessage(lead)
     window.open(buildWhatsAppUrl(lead.whatsapp_phone, msg), '_blank')
     void updateLead(lead.id, { wa_msg1_sent_at: new Date().toISOString() })
       .then(async (updated) => {
         upsertLead(updated)
         await safeLog(lead.id, 'wa_message_sent', {
           step: 'msg1_sondeo',
-          template: lead.expediente_outreach_message?.trim()
-            ? 'expediente_outreach'
-            : 'default',
+          template: lead.expediente_outreach_message?.trim() ? 'expediente' : 'default',
           preview: msg.slice(0, 280),
         })
         onAfterLogged?.()
