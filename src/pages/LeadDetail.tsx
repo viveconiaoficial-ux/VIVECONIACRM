@@ -1,6 +1,5 @@
 import {
   ArrowLeft,
-  Building2,
   Copy,
   FileDown,
   FileText,
@@ -16,6 +15,7 @@ import {
 } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
 import { ExpedienteEditor } from '@/components/leads/ExpedienteEditor'
+import { LeadContactEditor } from '@/components/leads/LeadContactEditor'
 import { LeadEstadoIntercambioPanel } from '@/components/leads/LeadEstadoIntercambioPanel'
 import { LeadStatusBadge } from '@/components/leads/LeadStatusBadge'
 import { LeadActions } from '@/components/leads/LeadActions'
@@ -377,53 +377,14 @@ export function LeadDetail({ leadId }: LeadDetailProps) {
           />
         </div>
 
-        <Card
-          id="datos-contacto"
-          className={cn(
-            'scroll-mt-6 overflow-hidden border-amber-500/15 bg-card/55 shadow-2xl shadow-black/35',
-            'backdrop-blur-md supports-[backdrop-filter]:bg-card/40',
-          )}
-        >
-          <CardHeader className="flex flex-row items-start gap-4 space-y-0 border-b border-amber-500/10 pb-4">
-            <div className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-amber-500/12 ring-1 ring-amber-400/22">
-              <Building2 className="size-5 text-amber-200/90" aria-hidden />
-            </div>
-            <div className="min-w-0 space-y-1">
-              <CardTitle className="text-lg text-stone-50">
-                Datos de contacto
-              </CardTitle>
-              <CardDescription className="text-stone-500">
-                Lo esencial para retomar la conversación.
-              </CardDescription>
-            </div>
-          </CardHeader>
-          <CardContent className="pt-6">
-            <div className="rounded-xl border border-amber-500/15 bg-stone-950/35 p-5 shadow-inner shadow-black/25">
-              <div className="grid gap-6 text-sm sm:grid-cols-2">
-                <DetailRow label="Persona de contacto" value={lead.contact_name} />
-                <DetailRow label="Email" value={lead.email} />
-                <DetailRow label="WhatsApp" value={lead.whatsapp_phone} />
-                <DetailRow label="Sector" value={lead.sector} />
-                <DetailRow label="¿Tiene web?" value={lead.has_website ? 'Sí' : 'No'} />
-                {lead.google_maps_url ? (
-                  <div className="sm:col-span-2">
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-amber-200/45">
-                      Google Maps
-                    </p>
-                    <a
-                      href={lead.google_maps_url}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="mt-1 inline-flex items-center gap-1 text-sm text-amber-300/90 underline-offset-2 hover:underline"
-                    >
-                      Abrir ficha
-                    </a>
-                  </div>
-                ) : null}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <LeadContactEditor
+          key={`${lead.id}:${lead.updated_at ?? lead.created_at}`}
+          lead={lead}
+          onSaved={(updated) => {
+            setLead(updated)
+            upsertLead(updated)
+          }}
+        />
 
         <div id="bloque-investigacion" className="scroll-mt-6 space-y-8">
           {hasInvestigation ? (
@@ -636,23 +597,6 @@ function Kpi({ label, value }: { label: string; value: string }) {
       <p className="mt-1 truncate text-sm text-stone-200" title={value}>
         {value}
       </p>
-    </div>
-  )
-}
-
-function DetailRow({
-  label,
-  value,
-}: {
-  label: string
-  value: string | null | undefined
-}) {
-  return (
-    <div className="space-y-1">
-      <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-amber-200/45">
-        {label}
-      </p>
-      <p className="text-base text-stone-100">{value ?? '—'}</p>
     </div>
   )
 }
