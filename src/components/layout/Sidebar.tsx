@@ -1,5 +1,6 @@
 import {
   BarChart3,
+  BookOpen,
   ClipboardList,
   Handshake,
   History,
@@ -152,6 +153,26 @@ export function SidebarContent({
             )}
           />
           Histórico rechazos
+        </button>
+        <button
+          type="button"
+          onClick={() => select('reflexiones_archivo')}
+          className={cn(
+            'group flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium transition-all',
+            activeView === 'reflexiones_archivo'
+              ? 'bg-amber-500/12 text-amber-50 shadow-sm ring-1 ring-amber-400/20'
+              : 'text-stone-400 hover:bg-stone-900/50 hover:text-stone-200',
+          )}
+        >
+          <BookOpen
+            className={cn(
+              'size-[18px] shrink-0 transition-transform group-hover:scale-105',
+              activeView === 'reflexiones_archivo'
+                ? 'text-amber-300/90'
+                : 'text-stone-500',
+            )}
+          />
+          Reflexiones guardadas
         </button>
         <button
           type="button"

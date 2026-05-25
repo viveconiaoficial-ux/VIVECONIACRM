@@ -239,7 +239,9 @@ export function FracasosReflexionSection({ leads }: { leads: Lead[] }) {
           ) : null}
           <p className="text-xs text-stone-500">
             El texto generado siempre es editable: ajústalo y pulsa Guardar para persistir en{' '}
-            <code className="text-[11px]">failure_ai_reflection</code>.
+            <code className="text-[11px]">failure_ai_reflection</code>. Las guardadas se consultan en
+            el menú <span className="text-amber-200/70">Reflexiones guardadas</span> (análisis global
+            con IA a partir de 3).
           </p>
         </div>
         {resumenPatron ? (
