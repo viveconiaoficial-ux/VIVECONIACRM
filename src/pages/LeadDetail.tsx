@@ -1,21 +1,16 @@
 import {
   ArrowLeft,
-  Copy,
   FileDown,
   FileText,
   FlaskConical,
-  Lightbulb,
   Loader2,
   MapPin,
-  Sparkles,
-  Target,
   UserCircle,
-  Users,
-  type LucideIcon,
 } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
 import { ExpedienteEditor } from '@/components/leads/ExpedienteEditor'
 import { LeadContactEditor } from '@/components/leads/LeadContactEditor'
+import { LeadInvestigationEditor } from '@/components/leads/LeadInvestigationEditor'
 import { LeadEstadoIntercambioPanel } from '@/components/leads/LeadEstadoIntercambioPanel'
 import { LeadStatusBadge } from '@/components/leads/LeadStatusBadge'
 import { LeadActions } from '@/components/leads/LeadActions'
@@ -35,7 +30,6 @@ import {
   getLeadById,
   getLeadCompetitors,
   getLeadProposals,
-  logLeadInteraction,
 } from '@/lib/supabase'
 import { useAppStore } from '@/store/useAppStore'
 import type { LeadCompetitor, LeadProposal } from '@/types/analytics'
@@ -105,25 +99,6 @@ export function LeadDetail({ leadId }: LeadDetailProps) {
     }
   }, [leadId, reloadSatellite])
 
-  async function copyText(label: string, text: string | null | undefined) {
-    if (!text?.trim()) {
-      toast.error('No hay texto para copiar')
-      return
-    }
-    try {
-      await navigator.clipboard.writeText(text)
-      void logLeadInteraction(leadId, 'wa_draft_created', {
-        action: 'copy',
-        label,
-        length: text.length,
-      }).catch(() => {})
-      await reloadSatellite()
-      toast.success('Copiado al portapapeles')
-    } catch {
-      toast.error('No se pudo copiar')
-    }
-  }
-
   async function handleDownloadPdf() {
     setPdfBusy(true)
     try {
@@ -177,14 +152,6 @@ export function LeadDetail({ leadId }: LeadDetailProps) {
       </div>
     )
   }
-
-  const hasInvestigation =
-    lead.investigation_opportunity ||
-    lead.investigation_pain ||
-    lead.message_sondeo_directo ||
-    lead.message_sondeo_consultivo ||
-    lead.video_hook_notes ||
-    lead.strategy_notes
 
   return (
     <div className="min-h-screen px-4 py-8 sm:px-8">
@@ -386,81 +353,15 @@ export function LeadDetail({ leadId }: LeadDetailProps) {
           }}
         />
 
-        <div id="bloque-investigacion" className="scroll-mt-6 space-y-8">
-          {hasInvestigation ? (
-            <div className="grid gap-6 lg:grid-cols-2">
-              {lead.investigation_opportunity ? (
-                <InsightCard
-                  icon={Lightbulb}
-                  title="Oportunidad"
-                  body={lead.investigation_opportunity}
-                />
-              ) : null}
-              {lead.investigation_pain ? (
-                <InsightCard
-                  icon={Target}
-                  title="Dolor"
-                  body={lead.investigation_pain}
-                />
-              ) : null}
-              {lead.message_sondeo_directo ? (
-                <MessageCard
-                  title="Sondeo directo (recomendado)"
-                  text={lead.message_sondeo_directo}
-                  onCopy={() =>
-                    void copyText('sondeo_directo', lead.message_sondeo_directo)
-                  }
-                />
-              ) : null}
-              {lead.message_sondeo_consultivo ? (
-                <MessageCard
-                  title="Enfoque consultivo"
-                  text={lead.message_sondeo_consultivo}
-                  onCopy={() =>
-                    void copyText(
-                      'sondeo_consultivo',
-                      lead.message_sondeo_consultivo,
-                    )
-                  }
-                />
-              ) : null}
-              {lead.video_hook_notes ? (
-                <InsightCard
-                  icon={Sparkles}
-                  title="Gancho para vídeo / seguimiento"
-                  body={lead.video_hook_notes}
-                  className="lg:col-span-2"
-                />
-              ) : null}
-              {lead.strategy_notes ? (
-                <InsightCard
-                  icon={Users}
-                  title="Estrategia / notas"
-                  body={lead.strategy_notes}
-                  className="lg:col-span-2"
-                />
-              ) : null}
-            </div>
-          ) : null}
-
-          {lead.research_payload &&
-          Object.keys(lead.research_payload).length > 0 ? (
-            <Card className="border-amber-500/15 bg-card/40 backdrop-blur-sm">
-              <CardHeader>
-                <CardTitle className="text-lg text-stone-50">
-                  Investigación (JSON)
-                </CardTitle>
-                <CardDescription>
-                  Volcado flexible desde IA / n8n. Úsalo para analítica avanzada.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <pre className="max-h-64 overflow-auto rounded-xl border border-amber-500/10 bg-stone-950/50 p-4 text-xs text-stone-400">
-                  {JSON.stringify(lead.research_payload, null, 2)}
-                </pre>
-              </CardContent>
-            </Card>
-          ) : null}
+        <div className="scroll-mt-6 space-y-8">
+          <LeadInvestigationEditor
+            key={`inv-${lead.id}:${lead.updated_at ?? lead.created_at}`}
+            lead={lead}
+            onSaved={(updated) => {
+              setLead(updated)
+              upsertLead(updated)
+            }}
+          />
 
           {competitors.length > 0 ? (
             <Card className="border-amber-500/15 bg-card/55 backdrop-blur-md">
@@ -534,42 +435,13 @@ export function LeadDetail({ leadId }: LeadDetailProps) {
             </Card>
           ) : null}
 
-          {!hasInvestigation &&
-          !(lead.research_payload && Object.keys(lead.research_payload).length > 0) &&
-          competitors.length === 0 &&
-          proposals.length === 0 ? (
-            <Card className="border-dashed border-amber-500/20 bg-stone-950/20 backdrop-blur-sm">
-              <CardHeader>
-                <CardTitle className="text-base text-stone-200">
-                  Amplía la investigación
-                </CardTitle>
-                <CardDescription className="text-stone-500">
-                  Aún no hay oportunidad/dolor, JSON de investigación, competidores ni
-                  propuestas enlazados. Rellena el expediente arriba o conecta tus flujos
-                  (n8n / IA) para volcar datos aquí.
-                </CardDescription>
-              </CardHeader>
-            </Card>
+          {competitors.length === 0 && proposals.length === 0 ? (
+            <p className="text-center text-xs text-stone-500">
+              Competidores y propuestas versionadas aparecen aquí cuando los enlaces tus
+              flujos (n8n) a Supabase.
+            </p>
           ) : null}
         </div>
-
-        {lead.notes ? (
-          <Card className="border-amber-500/15 bg-card/55 shadow-xl shadow-black/25 backdrop-blur-md supports-[backdrop-filter]:bg-card/40">
-            <CardHeader>
-              <CardTitle className="text-lg text-stone-50">Notas</CardTitle>
-              <CardDescription className="text-stone-500">
-                Notas manuales del pipeline.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="rounded-xl border border-amber-500/12 bg-stone-950/35 p-5">
-                <p className="whitespace-pre-wrap text-sm leading-relaxed text-stone-300">
-                  {lead.notes}
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        ) : null}
           </TabsContent>
 
           <TabsContent value="estado" className="mt-6 outline-none">
@@ -598,69 +470,5 @@ function Kpi({ label, value }: { label: string; value: string }) {
         {value}
       </p>
     </div>
-  )
-}
-
-function InsightCard({
-  icon: Icon,
-  title,
-  body,
-  className,
-}: {
-  icon: LucideIcon
-  title: string
-  body: string
-  className?: string
-}) {
-  return (
-    <Card
-      className={cn(
-        'border-amber-500/15 bg-card/50 shadow-lg shadow-black/20',
-        className,
-      )}
-    >
-      <CardHeader className="flex flex-row items-center gap-3 space-y-0 pb-2">
-        <div className="flex size-9 items-center justify-center rounded-xl bg-amber-500/12 ring-1 ring-amber-400/20">
-          <Icon className="size-4 text-amber-200/90" aria-hidden />
-        </div>
-        <CardTitle className="text-base text-stone-50">{title}</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <p className="text-sm leading-relaxed text-stone-300">{body}</p>
-      </CardContent>
-    </Card>
-  )
-}
-
-function MessageCard({
-  title,
-  text,
-  onCopy,
-}: {
-  title: string
-  text: string
-  onCopy: () => void
-}) {
-  return (
-    <Card className="border-amber-500/15 bg-card/50 shadow-lg shadow-black/20">
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-base text-stone-50">{title}</CardTitle>
-        <Button
-          type="button"
-          size="sm"
-          variant="outline"
-          className="gap-1.5 border-amber-400/25 text-amber-100"
-          onClick={onCopy}
-        >
-          <Copy className="size-3.5" />
-          Copiar
-        </Button>
-      </CardHeader>
-      <CardContent>
-        <p className="whitespace-pre-wrap text-sm leading-relaxed text-stone-300">
-          {text}
-        </p>
-      </CardContent>
-    </Card>
   )
 }
