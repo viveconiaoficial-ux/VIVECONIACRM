@@ -1,5 +1,6 @@
 import type { Lead } from '@/types/lead'
 import { STATUS_LABELS } from '@/constants'
+import { supabase } from '@/lib/supabase'
 
 /** Payload para un webhook tipo n8n / Edge Function que devuelve texto. */
 export function sanitizeLeadForReflectionWebhook(lead: Lead): Record<string, unknown> {
@@ -72,6 +73,60 @@ export async function fetchFailureReflectionFromWebhook(
   return textRaw.trim() || null
 }
 
+/**
+ * Edge Function `failure-reflection` en el mismo proyecto Supabase (JWT del usuario).
+ * Requiere secreto `OPENROUTER_API_KEY` en Supabase (Edge Function llama a OpenRouter).
+ * Desactivar con `VITE_DISABLE_FAILURE_EDGE=true` (p. ej. depuración).
+ */
+export async function fetchFailureReflectionFromEdge(
+  lead: Lead,
+): Promise<string | null> {
+  const disabled =
+    (import.meta.env.VITE_DISABLE_FAILURE_EDGE as string | undefined)?.trim() === 'true'
+  if (disabled) return null
+
+  try {
+    const { data, error } = await supabase.functions.invoke<{
+      reflection?: string
+      error?: string
+      code?: string
+    }>('failure-reflection', {
+      body: { lead: sanitizeLeadForReflectionWebhook(lead) },
+    })
+
+    if (error) {
+      console.warn('[failure-reflection edge]', error.message)
+      return null
+    }
+    const r =
+      data && typeof data === 'object' && typeof data.reflection === 'string'
+        ? data.reflection.trim()
+        : ''
+    return r.length > 0 ? r : null
+  } catch (e) {
+    console.warn('[failure-reflection edge]', e)
+    return null
+  }
+}
+
+export type FailureReflectionSource = 'edge' | 'webhook' | 'draft'
+
+/** Orden: Edge Function → webhook opcional → borrador local. */
+export async function resolveFailureReflectionWithSource(
+  lead: Lead,
+): Promise<{ text: string; source: FailureReflectionSource }> {
+  const fromEdge = await fetchFailureReflectionFromEdge(lead)
+  if (fromEdge) return { text: fromEdge, source: 'edge' }
+
+  try {
+    const remote = await fetchFailureReflectionFromWebhook(lead)
+    if (remote) return { text: remote, source: 'webhook' }
+  } catch {
+    /* cae al borrador */
+  }
+  return { text: buildFailureReflectionDraft(lead), source: 'draft' }
+}
+
 /** Borrador estructural en español (sin LLM): hipótesis y mejoras accionables. */
 export function buildFailureReflectionDraft(lead: Lead): string {
   const tipo =
@@ -132,19 +187,14 @@ export function buildFailureReflectionDraft(lead: Lead): string {
   )
 
   bloques.push(
-    '**Para IA “de verdad”:** configura `VITE_FAILURE_REFLECTION_WEBHOOK_URL` con un webhook (p. ej. n8n → OpenAI); este CRM enviará un resumen de la ficha y guardará aquí lo que devuelva la IA.',
+    '**Para IA remota:** 1) Despliega la Edge Function `failure-reflection` y el secreto `OPENROUTER_API_KEY` en Supabase (OpenRouter). 2) Opcional: `VITE_FAILURE_REFLECTION_WEBHOOK_URL` (n8n u otro) como respaldo si la función no está o falla.',
   )
 
   return bloques.join('\n\n')
 }
 
-/** Intenta webhook; si no hay o falla, devuelve el borrador local. */
+/** Devuelve solo el texto (Edge → webhook → borrador). */
 export async function resolveFailureReflectionText(lead: Lead): Promise<string> {
-  try {
-    const remote = await fetchFailureReflectionFromWebhook(lead)
-    if (remote) return remote
-  } catch {
-    /* cae al borrador */
-  }
-  return buildFailureReflectionDraft(lead)
+  const { text } = await resolveFailureReflectionWithSource(lead)
+  return text
 }

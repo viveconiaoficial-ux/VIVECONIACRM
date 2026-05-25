@@ -10,7 +10,7 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { Textarea } from '@/components/ui/textarea'
-import { resolveFailureReflectionText } from '@/lib/failureReflection'
+import { resolveFailureReflectionWithSource } from '@/lib/failureReflection'
 import { updateLead } from '@/lib/supabase'
 import { useAppStore } from '@/store/useAppStore'
 import type { Lead } from '@/types/lead'
@@ -23,7 +23,21 @@ function sortRejected(a: Lead, b: Lead): number {
   return tb - ta
 }
 
-function FailureReflectionCard({ lead }: { lead: Lead }) {
+function failureReflectionGenerateLabel(edgeDisabled: boolean, hasWebhook: boolean): string {
+  if (!edgeDisabled) return 'Consultar IA (Edge)'
+  if (hasWebhook) return 'Consultar IA (webhook)'
+  return 'Generar borrador (local)'
+}
+
+function FailureReflectionCard({
+  lead,
+  edgeDisabled,
+  hasWebhook,
+}: {
+  lead: Lead
+  edgeDisabled: boolean
+  hasWebhook: boolean
+}) {
   const upsertLead = useAppStore((s) => s.upsertLead)
   const [text, setText] = useState(lead.failure_ai_reflection ?? '')
   const [generating, setGenerating] = useState(false)
@@ -36,16 +50,15 @@ function FailureReflectionCard({ lead }: { lead: Lead }) {
   async function onGenerate() {
     setGenerating(true)
     try {
-      const resolved = await resolveFailureReflectionText(lead)
+      const { text: resolved, source } = await resolveFailureReflectionWithSource(lead)
       setText(resolved)
-      const hasWebhook = !!(
-        import.meta.env.VITE_FAILURE_REFLECTION_WEBHOOK_URL as string | undefined
-      )?.trim()
-      toast.success(
-        hasWebhook
-          ? 'Respuesta del webhook aplicada (revísala y guarda si te encaja).'
-          : 'Borrador automático listo (sin webhook). Revísalo y guarda.',
-      )
+      const msg =
+        source === 'edge'
+          ? 'Texto desde la Edge Function (OpenRouter). Revísalo y guarda.'
+          : source === 'webhook'
+            ? 'Respuesta del webhook aplicada (revísala y guarda).'
+            : 'Borrador local (reglas sobre la ficha, sin modelo). Revísalo y guarda.'
+      toast.success(msg)
     } catch (e) {
       console.error(e)
       toast.error(
@@ -108,7 +121,7 @@ function FailureReflectionCard({ lead }: { lead: Lead }) {
               ) : (
                 <Sparkles className="size-3.5" />
               )}
-              Generar opinión
+              {failureReflectionGenerateLabel(edgeDisabled, hasWebhook)}
             </Button>
             <Button
               type="button"
@@ -137,7 +150,13 @@ function FailureReflectionCard({ lead }: { lead: Lead }) {
           value={text}
           onChange={(e) => setText(e.target.value)}
           rows={10}
-          placeholder="Pulsa «Generar opinión» para un borrador (o respuesta de tu webhook IA). Aquí puedes editar antes de guardar."
+          placeholder={
+            !edgeDisabled
+              ? 'Pulsa Consultar IA (Edge): OpenRouter desde Supabase (secreto OPENROUTER_API_KEY). Si falla, webhook y luego borrador local.'
+              : hasWebhook
+                ? 'Pulsa Consultar IA (webhook) o escribe a mano. Guarda cuando quede bien.'
+                : 'Pulsa Generar borrador (local): reglas sobre la ficha, sin modelo. Luego edita y Guardar.'
+          }
           className={cn(
             'resize-y rounded-xl border-zinc-500/20 bg-stone-950/50 text-sm text-stone-200',
             'placeholder:text-stone-600 min-h-[180px]',
@@ -150,6 +169,12 @@ function FailureReflectionCard({ lead }: { lead: Lead }) {
 
 export function FracasosReflexionSection({ leads }: { leads: Lead[] }) {
   const sorted = useMemo(() => [...leads].sort(sortRejected), [leads])
+
+  const hasWebhook = !!(
+    import.meta.env.VITE_FAILURE_REFLECTION_WEBHOOK_URL as string | undefined
+  )?.trim()
+  const edgeDisabled =
+    (import.meta.env.VITE_DISABLE_FAILURE_EDGE as string | undefined)?.trim() === 'true'
 
   const resumenPatron = useMemo(() => {
     const n = sorted.length
@@ -192,16 +217,31 @@ export function FracasosReflexionSection({ leads }: { leads: Lead[] }) {
         <h2 className="mt-1 text-xl font-semibold text-stone-50">
           Reflexión por cada rechazo
         </h2>
-        <p className="mt-2 max-w-3xl text-sm leading-relaxed text-amber-200/55">
-          «Generar opinión» usa tu webhook IA si definiste{' '}
-          <code className="rounded bg-stone-950/80 px-1 text-[11px] text-amber-200/90">
-            VITE_FAILURE_REFLECTION_WEBHOOK_URL
-          </code>{' '}
-          (cuerpo JSON con el campo{' '}
-          <code className="text-[11px]">lead</code> resumido); si no, arma un borrador guiado desde
-          la ficha (sector, WhatsApp enviado, motivo registrado, dolor investigado…). Edita el
-          texto y pulsa Guardar para persistir en Supabase.
-        </p>
+        <div className="mt-2 max-w-3xl space-y-2 text-sm leading-relaxed text-amber-200/55">
+          <p>
+            <span className="font-medium text-amber-100/85">Orden automático:</span> primero la Edge
+            Function <code className="text-[11px]">failure-reflection</code> del mismo proyecto
+            Supabase (OpenRouter con el secreto{' '}
+            <code className="text-[11px]">OPENROUTER_API_KEY</code>); si no responde o no está
+            configurada, el{' '}
+            <span className="text-amber-100/80">webhook opcional</span>{' '}
+            <code className="rounded bg-stone-950/80 px-1 text-[11px]">
+              VITE_FAILURE_REFLECTION_WEBHOOK_URL
+            </code>
+            ; si tampoco, <span className="text-amber-100/80">borrador local</span> instantáneo (reglas
+            sobre la ficha).
+          </p>
+          {edgeDisabled ? (
+            <p className="text-xs text-amber-200/70">
+              Ahora mismo <code className="text-[11px]">VITE_DISABLE_FAILURE_EDGE=true</code>: se
+              salta Edge y solo se usa webhook (si existe) o borrador local.
+            </p>
+          ) : null}
+          <p className="text-xs text-stone-500">
+            El texto generado siempre es editable: ajústalo y pulsa Guardar para persistir en{' '}
+            <code className="text-[11px]">failure_ai_reflection</code>.
+          </p>
+        </div>
         {resumenPatron ? (
           <Card className="mt-4 border-amber-500/15 bg-amber-500/[0.04]">
             <CardHeader className="py-4">
@@ -221,7 +261,12 @@ export function FracasosReflexionSection({ leads }: { leads: Lead[] }) {
       </div>
       <div className="space-y-5">
         {sorted.map((l) => (
-          <FailureReflectionCard key={l.id} lead={l} />
+          <FailureReflectionCard
+            key={l.id}
+            lead={l}
+            edgeDisabled={edgeDisabled}
+            hasWebhook={hasWebhook}
+          />
         ))}
       </div>
     </section>
